@@ -1,6 +1,7 @@
 package com.Ristretto.API.domain.user;
 
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -48,4 +49,12 @@ public class User {
     private LocalDateTime updatedAt;
 
 
+    public User(@Valid UserRegistrationData data) {
+        this.name = data.name();
+        this.email =  data.email();
+        this.passwordHash = data.password();
+        this.theme = data.theme();
+        this.defaultReminderMin = data.defaultReminderMin();
+        this.avatarUrl = data.avatarUrl();
+    }
 }

@@ -13,6 +13,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -69,6 +70,9 @@ public class Task {
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CalendarEvent> calendarEvents;
 
+    @Autowired
+    private EntityManager entityManager;
+
     public Task(@Valid TaskRegistrationData data) {
         this.title = data.title();
         this.description = data.description();
@@ -77,21 +81,13 @@ public class Task {
         this.status = data.status();
         this.focusMode = data.focusMode();
         this.isDone = data.isDone();
+        if (data.userId() != null)
+            this.user = entityManager.getReference(User.class, data.userId());
 
-        // Criando referências para os relacionamentos
-        if (data.userId() != null) {
-            this.user = new User();
-            // Você precisará de um setter ou usar EntityManager.getReference()
-        }
+        if (data.categoryId() != null)
+            this.category = entityManager.getReference(Category.class, data.categoryId());
 
-        if (data.categoryId() != null) {
-            this.category = new Category();
-            // Você precisará de um setter ou usar EntityManager.getReference()
-        }
-
-        if (data.goalId() != null) {
-            this.goal = new Goal();
-            // Você precisará de um setter ou usar EntityManager.getReference()
-        }
+        if (data.goalId() != null)
+            this.goal = entityManager.getReference(Goal.class, data.goalId());
     }
 }
