@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "sub_task")
+@Table(name = "subtasks")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,5 +1,3 @@
-DROP DATABASE IF EXISTS tcc_tdah_organizer;
-CREATE DATABASE tcc_tdah_organizer
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 

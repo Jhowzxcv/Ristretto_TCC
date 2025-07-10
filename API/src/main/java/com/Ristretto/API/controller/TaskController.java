@@ -26,6 +26,9 @@ public class TaskController {
     @Autowired
     private TaskRepository repository;
 
+    @Autowired
+    private TaskService service;
+
     @PostMapping
     @Transactional
     @Operation(
@@ -58,14 +61,8 @@ public class TaskController {
                     )
             )
     })
-    public ResponseEntity register(
-            @RequestBody @Valid
-            @Parameter(description = "Dados para criação da tarefa", required = true)
-            TaskRegistrationData data,
-            UriComponentsBuilder uriBuilder
-    ) {
-        var task = new Task(data);
-        repository.save(task);
+    public ResponseEntity register(@RequestBody @Valid TaskRegistrationData data, UriComponentsBuilder uriBuilder) {
+        var task = service.register(data);
 
         var uri = uriBuilder.path("/task/{id}").buildAndExpand(task.getId()).toUri();
 
@@ -96,11 +93,11 @@ public class TaskController {
             )
     })
     public ResponseEntity<Page<TaskDataListing>> listing(
-            @PageableDefault(size = 10, sort = {"name"})
+            @PageableDefault(size = 10, sort = {"title"})
             @Parameter(description = "Parâmetros de paginação (page, size, sort)")
             Pageable pageable
     ){
-        var page = repository.findAll(pageable).map(TaskDataListing::new);
+        var page = service.findAll(pageable).map(TaskDataListing::new);
 
         return ResponseEntity.ok(page);
     }
@@ -138,7 +135,7 @@ public class TaskController {
             @Parameter(description = "ID da tarefa a ser deletada", required = true, example = "1")
             Long id
     ){
-        repository.deleteById(id);
+        service.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

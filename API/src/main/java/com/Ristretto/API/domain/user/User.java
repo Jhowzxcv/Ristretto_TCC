@@ -31,7 +31,7 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Theme theme;
 
-    @Column(name = "default_reminder_min")
+    @Column(name = "default_reminder_minutes")
     private Integer defaultReminderMin;
 
     @Column(name = "avatar_url")

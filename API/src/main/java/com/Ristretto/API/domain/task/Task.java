@@ -8,21 +8,18 @@ import com.Ristretto.API.domain.goal.Goal;
 import jakarta.persistence.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "tasks")
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class Task {
     @Id
@@ -70,10 +67,8 @@ public class Task {
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CalendarEvent> calendarEvents;
 
-    @Autowired
-    private EntityManager entityManager;
 
-    public Task(@Valid TaskRegistrationData data) {
+    public Task(TaskRegistrationData data, User user, Category category, Goal goal) {
         this.title = data.title();
         this.description = data.description();
         this.dueDate = data.dueDate();
@@ -81,13 +76,8 @@ public class Task {
         this.status = data.status();
         this.focusMode = data.focusMode();
         this.isDone = data.isDone();
-        if (data.userId() != null)
-            this.user = entityManager.getReference(User.class, data.userId());
-
-        if (data.categoryId() != null)
-            this.category = entityManager.getReference(Category.class, data.categoryId());
-
-        if (data.goalId() != null)
-            this.goal = entityManager.getReference(Goal.class, data.goalId());
+        this.user = user;
+        this.category = category;
+        this.goal = goal;
     }
 }

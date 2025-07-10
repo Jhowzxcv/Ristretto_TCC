@@ -72,9 +72,7 @@ public class UserController {
         return ResponseEntity.created(uri).body(new UserDataDetails(user));
     }
 
-
-    @DeleteMapping("/{id}")
-    @Transactional
+    @GetMapping("/{id}")
     @Operation(
             summary = "Buscar usuario",
             description = "Busca um usuario do sistema pelo ID"
@@ -82,7 +80,11 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "usuario encontrado com sucesso"
+                    description = "usuario encontrado com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserDataDetails.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
@@ -110,41 +112,33 @@ public class UserController {
         return ResponseEntity.ok(new UserDataDetails(user));
     }
 
-
     @DeleteMapping("/{id}")
     @Transactional
     @Operation(
-            summary = "Deletar usuario",
-            description = "Remove um usuario do sistema pelo ID"
+            summary = "Deletar usuário",
+            description = "Remove um usuário do sistema pelo ID"
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "usuario deletado com sucesso"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "usuario não encontrado",
+            @ApiResponse(responseCode = "204", description = "Usuário deletado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Usuario não encontrado\" }")
+                            schema = @Schema(example = "{ \"error\": \"Usuário não encontrado\" }")
                     )
             ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<Void> delete(
             @PathVariable
-            @Parameter(description = "ID do usuario a ser deletado", required = true, example = "1")
+            @Parameter(description = "ID do usuário a ser deletado", required = true, example = "1")
             Long id
-    ){
+    ) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
 }
