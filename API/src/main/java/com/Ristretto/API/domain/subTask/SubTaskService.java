@@ -26,10 +26,6 @@ public class SubTaskService {
         this.repository = repository;
     }
 
-    public Page<SubTask> findAll(Pageable pageable){
-        return repository.findAll(pageable);
-    }
-
     @Transactional
     public SubTask convertToEntity(SubTaskRegistrationData data) {
         Task task = null;

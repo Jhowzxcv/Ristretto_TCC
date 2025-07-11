@@ -62,7 +62,7 @@ public class SubTaskController {
     public ResponseEntity register(@RequestBody @Valid SubTaskRegistrationData data, UriComponentsBuilder uriBuilder) {
         var subtask = service.convertToEntity(data);
         service.save(subtask);
-        var uri = uriBuilder.path("/task/{id}").buildAndExpand(subtask.getId()).toUri();
+        var uri = uriBuilder.path("/subtask/{id}").buildAndExpand(subtask.getId()).toUri();
 
         return ResponseEntity.created(uri).body(new SubTaskDataDetails(subtask));
     }

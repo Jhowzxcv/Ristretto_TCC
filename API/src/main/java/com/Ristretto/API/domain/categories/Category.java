@@ -26,11 +26,20 @@ public class Category {
     private String color;
     private String icon;
 
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+
+    public Category(CategoryRegistrationData data, User user) {
+        this.name = data.name();
+        this.description = data.description();
+        this.color = data.color();
+        this.icon = data.icon();
+        this.user = user;
+    }
 }
