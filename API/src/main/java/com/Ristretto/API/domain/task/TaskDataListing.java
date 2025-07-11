@@ -1,7 +1,5 @@
 package com.Ristretto.API.domain.task;
 
-import org.springframework.security.access.method.P;
-
 import java.time.LocalDateTime;
 
 public record TaskDataListing(Long id, String title, String description, LocalDateTime creationDate, LocalDateTime dueDate, Priority priority, Status status, boolean isDone) {

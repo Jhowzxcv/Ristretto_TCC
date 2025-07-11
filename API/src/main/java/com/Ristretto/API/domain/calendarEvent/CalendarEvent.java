@@ -41,7 +41,6 @@ public class CalendarEvent {
     @ManyToOne
     @JoinColumn(name = "task_id")
     private Task task;
-
     private Boolean repetitive;
 
     @Enumerated(EnumType.STRING)

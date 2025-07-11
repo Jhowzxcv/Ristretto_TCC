@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +23,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequestMapping("/task")
 @Tag(name = "Task", description = "gerenciamento de tarefas do usuario")
 public class TaskController {
-
-    @Autowired
-    private TaskRepository repository;
 
     @Autowired
     private TaskService service;
@@ -80,7 +78,7 @@ public class TaskController {
                     description = "Lista de tarefas recuperada com sucesso",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Page.class)
+                            schema = @Schema(implementation = TaskDataListing.class)
                     )
             ),
             @ApiResponse(
@@ -93,7 +91,7 @@ public class TaskController {
             )
     })
     public ResponseEntity<Page<TaskDataListing>> listing(
-            @PageableDefault(size = 10, sort = {"title"})
+            @PageableDefault(sort = {"priority", "dueDate"}, direction = Sort.Direction.ASC)
             @Parameter(description = "Parâmetros de paginação (page, size, sort)")
             Pageable pageable
     ){

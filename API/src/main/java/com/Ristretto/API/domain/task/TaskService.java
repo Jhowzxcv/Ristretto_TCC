@@ -13,17 +13,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class TaskService {
 
-    private final TaskRepository taskRepository;
+    private final TaskRepository Repository;
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    public TaskService(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
+    public TaskService(TaskRepository Repository) {
+        this.Repository = Repository;
     }
 
     public Page<Task> findAll(Pageable pageable){
-        return taskRepository.findAll(pageable);
+        return Repository.findAll(pageable);
     }
 
     @Transactional
@@ -45,10 +45,10 @@ public class TaskService {
 
         Task task = new Task(data, user, category, goal);
 
-        return taskRepository.save(task);
+        return Repository.save(task);
     }
 
     public void deleteById(Long id) {
-        taskRepository.deleteById(id);
+        Repository.deleteById(id);
     }
 }
