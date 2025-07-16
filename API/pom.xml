@@ -117,18 +117,6 @@
 					</excludes>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.flywaydb</groupId>
-				<artifactId>flyway-maven-plugin</artifactId>
-				<version>11.7.2</version>
-				<configuration>
-					<url>jdbc:mysql://localhost:3306/tcc_tdah_organizer</url>
-					<user>root</user>
-					<password>v3$Fq2!bLx@1Rm7Z</password>
-					<!-- ou para PostgreSQL -->
-					<!-- <url>jdbc:postgresql://localhost:5432/seu_banco</url> -->
-				</configuration>
-			</plugin>
 		</plugins>
 	</build>
 
