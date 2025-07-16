@@ -3,6 +3,7 @@ package com.Ristretto.API.domain.calendarEvent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +23,7 @@ public record CalendarEventRegistrationData(
 
         String timezone,
 
+        @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Cor deve estar no formato hexadecimal ex: #1A2B3C")
         String color,
 
         @NotNull(message = "{user.required}")

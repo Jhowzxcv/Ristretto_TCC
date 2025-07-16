@@ -54,4 +54,19 @@ public class CalendarEvent {
     private Boolean tactileReminder;
 
 
+    public CalendarEvent(CalendarEventRegistrationData data, User user, Task task) {
+        this.title = data.title();
+        this.description = data.description();
+        this.startDate = data.startDate();
+        this.endDate = data.endDate();
+        this.timezone = data.timezone();
+        this.color = data.color();
+        this.repetitive = data.repetitive();
+        this.repetitionType = data.repetitionType();
+        this.repetitionRule = data.repetitionRule();
+        this.tactileReminder = data.tactileReminder();
+        this.user = user;
+        this.task = task;
+    }
+
 }
