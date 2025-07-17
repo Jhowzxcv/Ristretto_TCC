@@ -28,15 +28,10 @@ public class SubTaskService {
 
     @Transactional
     public SubTask convertToEntity(SubTaskRegistrationData data) {
-        Task task = null;
-        if (data.taskId() != null) {
-            task = entityManager.getReference(Task.class, data.taskId());
-        }
-
-        SubTask subtask = new SubTask(data, task);
+        Task task = entityManager.getReference(Task.class, data.taskId());
 
 
-        return subtask;
+        return new SubTask(data, task);
     }
 
 

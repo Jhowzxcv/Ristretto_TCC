@@ -28,15 +28,12 @@ public class CategoryService {
 
     @Transactional
     public Category convertToEntity(CategoryRegistrationData data) {
-        User user = null;
-        if (data.userId() != null) {
-            user = entityManager.getReference(User.class, data.userId());
-        }
-
-        Category category = new Category(data, user);
+        User user = entityManager.getReference(User.class, data.userId());
 
 
-        return category;
+
+
+        return new Category(data, user);
     }
 
 

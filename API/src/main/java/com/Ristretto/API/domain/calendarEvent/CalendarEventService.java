@@ -30,41 +30,16 @@ public class CalendarEventService {
 
     @Transactional
     public CalendarEvent convertToEntity(CalendarEventRegistrationData data) {
-        if (data.startDate() != null && data.endDate() != null && data.endDate().isBefore(data.startDate())) {
-            throw new IllegalArgumentException("A data de término deve ser igual ou posterior à de início");
-        }
-
-        // Validação direta da timezone
-        if (data.timezone() != null && !data.timezone().isBlank()) {
-            try {
-                java.time.ZoneId.of(data.timezone());
-            } catch (java.time.zone.ZoneRulesException e) {
-                throw new IllegalArgumentException("Timezone inválida: " + data.timezone());
-            }
-        }
-
-        if (data.repetitionRule() != null && !data.repetitionRule().isBlank()) {
-            try {
-                new RRule(data.repetitionRule()).validate();
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Regra de repetição inválida segundo RFC 5545");
-            }
-        }
-
-        User user = null;
-        if (data.userId() != null) {
-            user = entityManager.getReference(User.class, data.userId());
-        }
+        User user = entityManager.getReference(User.class, data.userId());
 
         Task task = null;
         if (data.taskId() != null) {
             task = entityManager.getReference(Task.class, data.taskId());
         }
 
-        CalendarEvent calendarEvent = new CalendarEvent(data, user, task);
-
-        return calendarEvent;
+        return new CalendarEvent(data, user, task);
     }
+
 
 
 

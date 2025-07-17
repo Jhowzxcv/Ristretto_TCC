@@ -60,7 +60,8 @@ public class TaskController {
             )
     })
     public ResponseEntity register(@RequestBody @Valid TaskRegistrationData data, UriComponentsBuilder uriBuilder) {
-        var task = service.register(data);
+        var task = service.convertToEntity(data);
+        service.save(task);
 
         var uri = uriBuilder.path("/task/{id}").buildAndExpand(task.getId()).toUri();
 
