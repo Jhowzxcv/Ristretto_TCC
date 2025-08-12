@@ -3,6 +3,7 @@ package com.Ristretto.API.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.ValidationException;
 
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;

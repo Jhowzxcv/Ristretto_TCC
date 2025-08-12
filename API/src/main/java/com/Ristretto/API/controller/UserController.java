@@ -1,9 +1,6 @@
 package com.Ristretto.API.controller;
 
-import com.Ristretto.API.domain.user.User;
-import com.Ristretto.API.domain.user.UserDataDetails;
-import com.Ristretto.API.domain.user.UserRegistrationData;
-import com.Ristretto.API.domain.user.UserRepository;
+import com.Ristretto.API.domain.user.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,6 +12,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -24,7 +22,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class UserController {
 
     @Autowired
-    private UserRepository repository;
+    private UserService userService;
 
     @PostMapping
     @Transactional
@@ -64,11 +62,8 @@ public class UserController {
             UserRegistrationData data,
             UriComponentsBuilder uriBuilder
     ) {
-        var user = new User(data);
-        repository.save(user);
-
+        var user = userService.createUser(data);
         var uri = uriBuilder.path("/user/{id}").buildAndExpand(user.getId()).toUri();
-
         return ResponseEntity.created(uri).body(new UserDataDetails(user));
     }
 
@@ -108,7 +103,7 @@ public class UserController {
             @Parameter(description = "ID do usuario a ser encontrado", required = true, example = "1")
             Long id
     ){
-        var user = repository.getReferenceById(id);
+        var user = userService.findById(id);
         return ResponseEntity.ok(new UserDataDetails(user));
     }
 
@@ -133,12 +128,11 @@ public class UserController {
             @Parameter(description = "ID do usuário a ser deletado", required = true, example = "1")
             Long id
     ) {
-        if (!repository.existsById(id)) {
+        if (!userService.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
 
-        repository.deleteById(id);
+        userService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
-
 }
