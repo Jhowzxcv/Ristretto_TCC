@@ -1,11 +1,13 @@
 package com.Ristretto.API.domain.task;
 
+import com.Ristretto.API.domain.taskList.TaskList;
 import com.Ristretto.API.domain.categories.Category;
 import com.Ristretto.API.domain.goal.Goal;
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -13,14 +15,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class TaskService {
 
-    private final TaskRepository repository;
+
+    @Autowired
+    private TaskRepository repository;
 
     @PersistenceContext
     private EntityManager entityManager;
-
-    public TaskService(TaskRepository Repository) {
-        this.repository = Repository;
-    }
 
     public Page<Task> findAll(Pageable pageable){
         return repository.findAll(pageable);
@@ -40,8 +40,14 @@ public class TaskService {
             goal = entityManager.getReference(Goal.class, data.goalId());
         }
 
+        TaskList list = null;
+        if (data.taskListId() != null){
+            list = entityManager.getReference(TaskList.class, data.taskListId());
+        }
 
-        return new Task(data, user, category, goal);
+
+
+        return new Task(data, user, category, goal, list);
     }
 
     public Task save(Task task) {

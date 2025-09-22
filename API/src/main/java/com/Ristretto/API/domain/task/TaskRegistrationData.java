@@ -28,6 +28,8 @@ public record TaskRegistrationData(
 
         Long goalId,
 
+        Long taskListId,
+
         Boolean focusMode,
 
         Boolean isDone

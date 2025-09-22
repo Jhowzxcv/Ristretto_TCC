@@ -1,16 +1,16 @@
 package com.Ristretto.API.domain.task;
 
+import com.Ristretto.API.domain.taskList.TaskList;
 import com.Ristretto.API.domain.calendarEvent.CalendarEvent;
 import com.Ristretto.API.domain.categories.Category;
+import com.Ristretto.API.domain.goal.Goal;
 import com.Ristretto.API.domain.subTask.SubTask;
 import com.Ristretto.API.domain.user.User;
-import com.Ristretto.API.domain.goal.Goal;
 import jakarta.persistence.*;
-import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -55,6 +55,10 @@ public class Task {
     @JoinColumn(name = "goal_id")
     private Goal goal;
 
+    @ManyToOne
+    @JoinColumn(name = "list_id")
+    private TaskList taskList;
+
     @Column(name = "focus_mode")
     private Boolean focusMode;
 
@@ -62,13 +66,13 @@ public class Task {
     private Boolean isDone;
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SubTask> subTasks;
+    private List<SubTask> subTasks = new ArrayList<>();
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CalendarEvent> calendarEvents;
+    private List<CalendarEvent> calendarEvents = new ArrayList<>();
 
 
-    public Task(TaskRegistrationData data, User user, Category category, Goal goal) {
+    public Task(TaskRegistrationData data, User user, Category category, Goal goal, TaskList taskList) {
         this.title = data.title();
         this.description = data.description();
         this.dueDate = data.dueDate();
@@ -79,5 +83,6 @@ public class Task {
         this.user = user;
         this.category = category;
         this.goal = goal;
+        this.taskList = taskList;
     }
 }
