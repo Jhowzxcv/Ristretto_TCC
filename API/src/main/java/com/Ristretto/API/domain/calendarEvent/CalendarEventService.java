@@ -1,5 +1,6 @@
 package com.Ristretto.API.domain.calendarEvent;
 
+import com.Ristretto.API.domain.category.Category;
 import com.Ristretto.API.domain.task.Task;
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.EntityManager;
@@ -40,7 +41,9 @@ public class CalendarEventService {
         return new CalendarEvent(data, user, task);
     }
 
-
+    public CalendarEvent findByid(Long id) {
+        return repository.getReferenceById(id);
+    }
 
 
 

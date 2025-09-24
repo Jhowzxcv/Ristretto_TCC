@@ -1,6 +1,6 @@
 package com.Ristretto.API.domain.task;
 
-import com.Ristretto.API.domain.categories.Category;
+import com.Ristretto.API.domain.category.Category;
 import com.Ristretto.API.domain.goal.Goal;
 import com.Ristretto.API.domain.taskList.TaskList;
 import com.Ristretto.API.domain.user.User;

@@ -12,7 +12,6 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -22,7 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class UserController {
 
     @Autowired
-    private UserService userService;
+    private UserService service;
 
     @PostMapping
     @Transactional
@@ -62,7 +61,8 @@ public class UserController {
             UserRegistrationData data,
             UriComponentsBuilder uriBuilder
     ) {
-        var user = userService.createUser(data);
+        var user = service.createUser(data);
+        service.save(user);
         var uri = uriBuilder.path("/user/{id}").buildAndExpand(user.getId()).toUri();
         return ResponseEntity.created(uri).body(new UserDataDetails(user));
     }
@@ -103,7 +103,39 @@ public class UserController {
             @Parameter(description = "ID do usuario a ser encontrado", required = true, example = "1")
             Long id
     ){
-        var user = userService.findById(id);
+        var user = service.findById(id);
+        return ResponseEntity.ok(new UserDataDetails(user));
+    }
+
+
+    @PutMapping
+    @Transactional
+    @Operation(
+            summary = "Atualizar usuário",
+            description = "Atualiza as informações de um usuário existente pelo ID"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }")
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Usuário não encontrado\" }")
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
+    public ResponseEntity<UserDataDetails> update(
+            @RequestBody @Valid UserUpdateData data
+    ){
+        var user = service.findById(data.id());
+        user.update(data);
+        service.save(user);
         return ResponseEntity.ok(new UserDataDetails(user));
     }
 
@@ -128,11 +160,11 @@ public class UserController {
             @Parameter(description = "ID do usuário a ser deletado", required = true, example = "1")
             Long id
     ) {
-        if (!userService.existsById(id)) {
+        if (!service.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
 
-        userService.deleteById(id);
+        service.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

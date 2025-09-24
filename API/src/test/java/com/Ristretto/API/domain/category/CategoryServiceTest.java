@@ -1,4 +1,4 @@
-package com.Ristretto.API.domain.categories;
+package com.Ristretto.API.domain.category;
 
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.EntityManager;

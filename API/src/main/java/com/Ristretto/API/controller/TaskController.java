@@ -60,8 +60,7 @@ public class TaskController {
             )
     })
     public ResponseEntity register(@RequestBody @Valid TaskRegistrationData data, UriComponentsBuilder uriBuilder) {
-        var task = service.convertToEntity(data);
-        service.save(task);
+        var task = service.createTask(data);
 
         var uri = uriBuilder.path("/task/{id}").buildAndExpand(task.getId()).toUri();
 
@@ -99,6 +98,37 @@ public class TaskController {
         var page = service.findAll(pageable).map(TaskDataListing::new);
 
         return ResponseEntity.ok(page);
+    }
+
+    @PutMapping
+    @Transactional
+    @Operation(
+            summary = "Atualizar tarefa",
+            description = "Atualiza as informações de uma tarefa existente pelo ID"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tarefa atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }")
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Tarefa não encontrada",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }")
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
+    public ResponseEntity<TaskDataDetails> update(
+            @RequestBody @Valid TaskUpdateData data
+    ) {
+        var task = service.findById(data.id());
+        task.update(data);
+        service.save(task);
+        return ResponseEntity.ok(new TaskDataDetails(task));
     }
 
     @DeleteMapping("/{id}")

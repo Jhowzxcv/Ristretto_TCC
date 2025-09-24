@@ -1,4 +1,4 @@
-package com.Ristretto.API.domain.categories;
+package com.Ristretto.API.domain.category;
 
 import java.time.LocalDateTime;
 

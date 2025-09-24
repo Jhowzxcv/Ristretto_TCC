@@ -1,5 +1,6 @@
 package com.Ristretto.API.domain.user;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,7 @@ public class UserService {
 
         // Cria e salva o usuário
         User user = new User(dataWithHashedPassword);
-        return repository.save(user);
+        return user;
     }
 
     public User findById(Long id) {
@@ -43,4 +44,9 @@ public class UserService {
     public void deleteById(Long id) {
         repository.deleteById(id);
     }
+
+    public User save(@Valid User user) {
+        return repository.save(user);
+    }
+
 }

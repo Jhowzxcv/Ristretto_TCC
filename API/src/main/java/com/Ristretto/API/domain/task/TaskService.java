@@ -1,7 +1,7 @@
 package com.Ristretto.API.domain.task;
 
 import com.Ristretto.API.domain.taskList.TaskList;
-import com.Ristretto.API.domain.categories.Category;
+import com.Ristretto.API.domain.category.Category;
 import com.Ristretto.API.domain.goal.Goal;
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.EntityManager;
@@ -15,14 +15,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class TaskService {
 
-
     @Autowired
     private TaskRepository repository;
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    public Page<Task> findAll(Pageable pageable){
+    public Page<Task> findAll(Pageable pageable) {
         return repository.findAll(pageable);
     }
 
@@ -40,14 +39,40 @@ public class TaskService {
             goal = entityManager.getReference(Goal.class, data.goalId());
         }
 
-        TaskList list = null;
-        if (data.taskListId() != null){
-            list = entityManager.getReference(TaskList.class, data.taskListId());
+        TaskList taskList = null;
+        if (data.taskListId() != null) {
+            taskList = entityManager.getReference(TaskList.class, data.taskListId());
         }
 
+        return new Task(data, user, category, goal, taskList);
+    }
 
+    @Transactional
+    public Task updateTaskEntity(TaskUpdateData data) {
+        Task existingTask = repository.getReferenceById(data.id());
 
-        return new Task(data, user, category, goal, list);
+        if (data.categoryId() != null) {
+            Category category = entityManager.getReference(Category.class, data.categoryId());
+            existingTask.setCategory(category);
+        }
+
+        if (data.goalId() != null) {
+            Goal goal = entityManager.getReference(Goal.class, data.goalId());
+            existingTask.setGoal(goal);
+        }
+
+        if (data.taskListId() != null) {
+            TaskList taskList = entityManager.getReference(TaskList.class, data.taskListId());
+            existingTask.setTaskList(taskList);
+        }
+
+        existingTask.update(data);
+
+        return existingTask;
+    }
+
+    public Task findById(Long id) {
+        return repository.getReferenceById(id);
     }
 
     public Task save(Task task) {
@@ -56,5 +81,17 @@ public class TaskService {
 
     public void deleteById(Long id) {
         repository.deleteById(id);
+    }
+
+    @Transactional
+    public Task createTask(TaskRegistrationData data) {
+        Task task = convertToEntity(data);
+        return save(task);
+    }
+
+    @Transactional
+    public Task update(TaskUpdateData data) {
+        Task updatedTask = updateTaskEntity(data);
+        return save(updatedTask);
     }
 }

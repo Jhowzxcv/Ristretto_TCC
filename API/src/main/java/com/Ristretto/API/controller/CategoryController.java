@@ -1,9 +1,6 @@
 package com.Ristretto.API.controller;
 
-import com.Ristretto.API.domain.categories.CategoryDataDetails;
-import com.Ristretto.API.domain.categories.CategoryDataListing;
-import com.Ristretto.API.domain.categories.CategoryRegistrationData;
-import com.Ristretto.API.domain.categories.CategoryService;
+import com.Ristretto.API.domain.category.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -101,6 +98,37 @@ public class CategoryController {
         var page = service.findByUserId(pageable, userId).map(CategoryDataListing::new);
 
         return ResponseEntity.ok(page);
+    }
+
+    @PutMapping
+    @Transactional
+    @Operation(
+            summary = "Atualizar tarefa",
+            description = "Atualiza as informações de uma tarefa existente pelo ID"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tarefa atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }")
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Tarefa não encontrada",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }")
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
+    public ResponseEntity<CategoryDataDetails> update(
+            @RequestBody @Valid CategoryUpdateData data
+    ) {
+        var category = service.findByid(data.id());
+        category.update(data);
+        service.save(category);
+        return ResponseEntity.ok(new CategoryDataDetails(category));
     }
 
     @DeleteMapping("/{id}")

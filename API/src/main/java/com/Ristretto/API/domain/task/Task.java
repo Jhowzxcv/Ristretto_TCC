@@ -2,14 +2,16 @@ package com.Ristretto.API.domain.task;
 
 import com.Ristretto.API.domain.taskList.TaskList;
 import com.Ristretto.API.domain.calendarEvent.CalendarEvent;
-import com.Ristretto.API.domain.categories.Category;
+import com.Ristretto.API.domain.category.Category;
 import com.Ristretto.API.domain.goal.Goal;
 import com.Ristretto.API.domain.subTask.SubTask;
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -19,6 +21,7 @@ import java.util.List;
 @Entity
 @Table(name = "tasks")
 @Getter
+@Setter
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class Task {
@@ -27,7 +30,6 @@ public class Task {
     private Long id;
 
     private String title;
-
     private String description;
 
     @CreationTimestamp
@@ -71,7 +73,7 @@ public class Task {
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CalendarEvent> calendarEvents = new ArrayList<>();
 
-
+    // Construtor para TaskRegistrationData (já existe)
     public Task(TaskRegistrationData data, User user, Category category, Goal goal, TaskList taskList) {
         this.title = data.title();
         this.description = data.description();
@@ -84,5 +86,29 @@ public class Task {
         this.category = category;
         this.goal = goal;
         this.taskList = taskList;
+    }
+
+    // Método corrigido para atualização
+    public void update(@Valid TaskUpdateData data) {
+        if (data.title() != null) {
+            this.title = data.title();
+        }
+        if (data.description() != null) {
+            this.description = data.description();
+        }
+        if (data.dueDate() != null) {
+            this.dueDate = data.dueDate();
+        }
+        if (data.priority() != null) {
+            this.priority = data.priority();
+        }
+        if (data.status() != null) {
+            this.status = data.status();
+        }
+        if (data.focusMode() != null) {
+            this.focusMode = data.focusMode();
+        }
+        // categoryId, goalId, taskListId são tratados no service
+        // pois precisam ser convertidos para entidades
     }
 }

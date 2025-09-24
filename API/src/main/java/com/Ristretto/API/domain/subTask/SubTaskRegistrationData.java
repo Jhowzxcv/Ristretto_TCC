@@ -12,8 +12,6 @@ public record SubTaskRegistrationData(
         @NotBlank(message = "{title.required}")
         String title,
 
-        Boolean isDone,
-
         String description,
 
         @Future(message = "{dueDate.future}")

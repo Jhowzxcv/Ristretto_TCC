@@ -2,6 +2,7 @@ package com.Ristretto.API.domain.subTask;
 
 import com.Ristretto.API.domain.task.Task;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -36,9 +37,25 @@ public class SubTask {
 
     public SubTask(SubTaskRegistrationData data, Task task) {
         this.title = data.title();
-        this.isDone = data.isDone();
+        this.isDone = false;
         this.description = data.description();
         this.dueDate = data.dueDate();
         this.task = task;
+    }
+
+    public void update(@Valid SubTaskUpdateData data) {
+        if (data.title() != null) {
+            this.title = data.title();
+        }
+        if (data.isDone() != null) {
+            this.isDone = data.isDone();
+        }
+        if (data.description() != null) {
+            this.description = data.description();
+        }
+        if (data.dueDate() != null) {
+            this.dueDate = data.dueDate();
+        }
+
     }
 }

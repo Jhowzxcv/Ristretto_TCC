@@ -35,6 +35,8 @@ public class SubTaskService {
     }
 
 
+
+
     public SubTask save(SubTask subTask) {
         return repository.save(subTask);
     }
@@ -43,5 +45,9 @@ public class SubTaskService {
 
     public void deleteById(Long id) {
         repository.deleteById(id);
+    }
+
+    public SubTask findByid(Long id) {
+        return repository.getReferenceById(id);
     }
 }

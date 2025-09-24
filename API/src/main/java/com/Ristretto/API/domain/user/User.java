@@ -108,4 +108,20 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    public void update(UserUpdateData data) {
+        if (data.name() != null) {
+            this.name = data.name();
+        }
+        if (data.theme() != null) {
+            this.theme = data.theme();
+        }
+        if (data.defaultReminderMin() != null) {
+            this.defaultReminderMin = data.defaultReminderMin();
+        }
+        if (data.avatarUrl() != null) {
+            this.avatarUrl = data.avatarUrl();
+        }
+
+    }
 }

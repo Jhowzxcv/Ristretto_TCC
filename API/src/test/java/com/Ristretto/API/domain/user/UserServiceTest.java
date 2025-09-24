@@ -59,12 +59,10 @@ class UserServiceTest {
     @Test
     void createUser_ShouldReturnUserWithHashedPassword_WhenValidDataProvided() {
         when(passwordEncoder.encode(originalPassword)).thenReturn(hashedPassword);
-        when(userRepository.save(any(User.class))).thenReturn(expectedUser);
 
         User result = userService.createUser(userRegistrationData);
 
         verify(passwordEncoder, times(1)).encode(originalPassword);
-        verify(userRepository, times(1)).save(any(User.class));
 
         assertEquals(expectedUser.getName(), result.getName());
         assertEquals(expectedUser.getEmail(), result.getEmail());

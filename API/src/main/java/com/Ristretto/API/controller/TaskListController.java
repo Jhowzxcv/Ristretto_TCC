@@ -1,8 +1,6 @@
 package com.Ristretto.API.controller;
 
-import com.Ristretto.API.domain.taskList.TaskList;
-import com.Ristretto.API.domain.taskList.TaskListService;
-import com.Ristretto.API.domain.taskList.TaskListRegistrationData;
+import com.Ristretto.API.domain.taskList.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,7 +25,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Tag(name = "TaskList", description = "Gerenciamento de listas de tarefas do usuário")
 public class TaskListController {
 
-    private final TaskListService taskListService;
+    private final TaskListService service;
 
     @GetMapping
     @Operation(
@@ -53,7 +51,7 @@ public class TaskListController {
             )
     })
     public ResponseEntity<Page<TaskList>> listing(Pageable pageable) {
-        var page = taskListService.findAll(pageable);
+        var page = service.findAll(pageable);
         return ResponseEntity.ok(page);
     }
 
@@ -93,7 +91,7 @@ public class TaskListController {
             @Parameter(description = "ID da lista de tarefas", required = true, example = "1")
             Long id
     ) {
-        var taskList = taskListService.findById(id);
+        var taskList = service.findById(id);
         return ResponseEntity.ok(taskList);
     }
 
@@ -133,8 +131,8 @@ public class TaskListController {
             @RequestBody @Valid TaskListRegistrationData data,
             UriComponentsBuilder uriBuilder
     ) {
-        var taskList = taskListService.convertToEntity(data);
-        taskListService.save(taskList);
+        var taskList = service.convertToEntity(data);
+        service.save(taskList);
 
         var uri = uriBuilder.path("/tasklists/{id}").buildAndExpand(taskList.getId()).toUri();
         return ResponseEntity.created(uri).body(taskList);
@@ -180,18 +178,13 @@ public class TaskListController {
                     )
             )
     })
-    public ResponseEntity<TaskList> update(
-            @PathVariable
-            @Parameter(description = "ID da lista de tarefas a ser atualizada", required = true, example = "1")
-            Long id,
-            @RequestBody @Valid TaskListRegistrationData data
+    public ResponseEntity update(
+            @RequestBody @Valid TaskListUpdateData data
     ) {
-        var taskList = taskListService.findById(id);
-        // Aqui você implementa a lógica de atualização conforme suas necessidades
-        // Por exemplo: taskList.setName(data.name()); etc.
-
-        taskListService.save(taskList);
-        return ResponseEntity.ok(taskList);
+        var taskList = service.findById(data.id());
+        taskList.update(data);
+        service.save(taskList);
+        return ResponseEntity.ok(new TaskListDataDetails(taskList));
     }
 
     @DeleteMapping("/{id}")
@@ -227,7 +220,7 @@ public class TaskListController {
             @Parameter(description = "ID da lista de tarefas a ser deletada", required = true, example = "1")
             Long id
     ) {
-        taskListService.deleteById(id);
+        service.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

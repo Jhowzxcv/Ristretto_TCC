@@ -3,6 +3,7 @@ package com.Ristretto.API.domain.calendarEvent;
 import com.Ristretto.API.domain.task.Task;
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -41,6 +42,7 @@ public class CalendarEvent {
     @ManyToOne
     @JoinColumn(name = "task_id")
     private Task task;
+
     private Boolean repetitive;
 
     @Enumerated(EnumType.STRING)
@@ -69,4 +71,36 @@ public class CalendarEvent {
         this.task = task;
     }
 
+    public void update(@Valid CalendarEventUpdateData data) {
+        if (data.title() != null) {
+            this.title = data.title();
+        }
+        if (data.description() != null) {
+            this.description = data.description();
+        }
+        if (data.startDate() != null) {
+            this.startDate = data.startDate();
+        }
+        if (data.endDate() != null) {
+            this.endDate = data.endDate();
+        }
+        if (data.timezone() != null) {
+            this.timezone = data.timezone();
+        }
+        if (data.color() != null) {
+            this.color = data.color();
+        }
+        if (data.repetitive() != null) {
+            this.repetitive = data.repetitive();
+        }
+        if (data.repetitionType() != null) {
+            this.repetitionType = data.repetitionType();
+        }
+        if (data.repeitionRule() != null) {
+            this.repetitionRule = data.repeitionRule();
+        }
+        if (data.tactileReminder() != null) {
+            this.tactileReminder = data.tactileReminder();
+        }
+    }
 }

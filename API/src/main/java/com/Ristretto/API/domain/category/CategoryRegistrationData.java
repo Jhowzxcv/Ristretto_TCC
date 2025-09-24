@@ -1,4 +1,4 @@
-package com.Ristretto.API.domain.categories;
+package com.Ristretto.API.domain.category;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

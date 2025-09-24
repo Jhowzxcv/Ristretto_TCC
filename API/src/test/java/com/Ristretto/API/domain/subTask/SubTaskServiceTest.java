@@ -50,7 +50,6 @@ class SubTaskServiceTest {
 
         completeSubTaskData = new SubTaskRegistrationData(
                 "Complete SubTask",
-                false,
                 "Detailed description of the subtask",
                 LocalDateTime.of(2025, 12, 31, 23, 59, 59),
                 taskId
@@ -58,7 +57,6 @@ class SubTaskServiceTest {
 
         minimalSubTaskData = new SubTaskRegistrationData(
                 "Minimal SubTask",
-                null,
                 null,
                 null,
                 taskId
@@ -82,7 +80,6 @@ class SubTaskServiceTest {
         SubTask result = subTaskService.convertToEntity(completeSubTaskData);
 
         assertEquals(completeSubTaskData.title(), result.getTitle());
-        assertEquals(completeSubTaskData.isDone(), result.getIsDone());
         assertEquals(completeSubTaskData.description(), result.getDescription());
         assertEquals(completeSubTaskData.dueDate(), result.getDueDate());
         assertEquals(mockTask, result.getTask());
@@ -95,7 +92,6 @@ class SubTaskServiceTest {
         SubTask result = subTaskService.convertToEntity(minimalSubTaskData);
 
         assertEquals(minimalSubTaskData.title(), result.getTitle());
-        assertEquals(minimalSubTaskData.isDone(), result.getIsDone());
         assertEquals(minimalSubTaskData.description(), result.getDescription());
         assertEquals(minimalSubTaskData.dueDate(), result.getDueDate());
         assertEquals(mockTask, result.getTask());

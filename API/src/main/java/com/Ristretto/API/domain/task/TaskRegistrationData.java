@@ -33,5 +33,5 @@ public record TaskRegistrationData(
         Boolean focusMode,
 
         Boolean isDone
-) {
+) implements TaskDataCommon {
 }

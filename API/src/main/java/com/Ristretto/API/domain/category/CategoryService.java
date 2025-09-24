@@ -1,4 +1,4 @@
-package com.Ristretto.API.domain.categories;
+package com.Ristretto.API.domain.category;
 
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.EntityManager;
@@ -41,6 +41,9 @@ public class CategoryService {
         return repository.save(category);
     }
 
+    public Category findByid(Long id) {
+        return repository.getReferenceById(id);
+    }
 
 
     public void deleteById(Long id) {

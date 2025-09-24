@@ -1,7 +1,8 @@
-package com.Ristretto.API.domain.categories;
+package com.Ristretto.API.domain.category;
 
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -41,5 +42,20 @@ public class Category {
         this.color = data.color();
         this.icon = data.icon();
         this.user = user;
+    }
+
+    public void update(@Valid CategoryUpdateData data) {
+        if (data.name() != null) {
+            this.name = data.name();
+        }
+        if (data.description() != null) {
+            this.description = data.description();
+        }
+        if (data.color() != null) {
+            this.color = data.color();
+        }
+        if (data.icon() != null) {
+            this.icon = data.icon();
+        }
     }
 }

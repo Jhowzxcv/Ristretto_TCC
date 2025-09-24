@@ -1,6 +1,6 @@
 package com.Ristretto.API.controller;
 
-import com.Ristretto.API.domain.user.AuthenticationData;
+import com.Ristretto.API.infra.security.AuthenticationData;
 import com.Ristretto.API.domain.user.User;
 import com.Ristretto.API.infra.security.JWTTokenData;
 import jakarta.validation.Valid;

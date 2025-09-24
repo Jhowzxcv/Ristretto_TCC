@@ -3,6 +3,7 @@ package com.Ristretto.API.domain.taskList;
 import com.Ristretto.API.domain.task.Task;
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -72,4 +73,37 @@ public class TaskList {
         this.deadline = data.deadline();
         this.user = user;
     }
+
+    public void update(@Valid TaskListUpdateData data) {
+        if (data.title() != null) {
+            this.title = data.title();
+        }
+        if (data.color() != null) {
+            this.color = data.color();
+        }
+        if (data.icon() != null) {
+            this.icon = data.icon();
+        }
+        if (data.type() != null) {
+            this.type = data.type();
+        }
+        if (data.repetitionIntervalAmount() != null) {
+            this.repetitionIntervalAmount = data.repetitionIntervalAmount();
+        }
+        if (data.repetitionIntervalType() != null) {
+            this.repetitionIntervalType = data.repetitionIntervalType();
+        }
+        if (data.repeatWhenComplete() != null) {
+            this.repeatWhenComplete = data.repeatWhenComplete();
+        }
+        if (data.manualRestartAllowed() != null) {
+            this.manualRestartAllowed = data.manualRestartAllowed();
+        }
+        if (data.deadline() != null) {
+            this.deadline = data.deadline();
+        }
+
+    }
+
 }
+

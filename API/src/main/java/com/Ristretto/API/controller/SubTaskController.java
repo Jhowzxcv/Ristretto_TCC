@@ -1,6 +1,8 @@
 package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.subTask.*;
+import com.Ristretto.API.domain.task.TaskDataDetails;
+import com.Ristretto.API.domain.task.TaskUpdateData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -97,6 +99,38 @@ public class SubTaskController {
         var page = service.findByTaskId(pageable, taskId).map(SubTaskDataListing::new);
         return ResponseEntity.ok(page);
     }
+
+    @PutMapping
+    @Transactional
+    @Operation(
+            summary = "Atualizar tarefa",
+            description = "Atualiza as informações de uma tarefa existente pelo ID"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tarefa atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }")
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Tarefa não encontrada",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }")
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
+    public ResponseEntity<SubTaskDataDetails> update(
+            @RequestBody @Valid SubTaskUpdateData data
+    ) {
+        var subTask = service.findByid(data.id());
+        subTask.update(data);
+        service.save(subTask);
+        return ResponseEntity.ok(new SubTaskDataDetails(subTask));
+    }
+
 
 
     @DeleteMapping("/{id}")
