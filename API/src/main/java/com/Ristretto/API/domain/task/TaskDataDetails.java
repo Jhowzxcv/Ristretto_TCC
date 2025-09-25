@@ -12,7 +12,7 @@ public record TaskDataDetails(
         Long userId,
         Long categoryId,
         Long goalId,
-        Long listId,
+        Long taskListId,
         Boolean focusMode,
         Boolean isDone
 ) {

@@ -58,7 +58,7 @@ public class Task {
     private Goal goal;
 
     @ManyToOne
-    @JoinColumn(name = "list_id")
+    @JoinColumn(name = "task_list_id")
     private TaskList taskList;
 
     @Column(name = "focus_mode")

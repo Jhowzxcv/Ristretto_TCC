@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "lists")
+@Table(name = "task_list")
 @Getter
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
@@ -58,7 +58,7 @@ public class TaskList {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToMany(mappedBy = "list", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "taskList", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Task> tasks = new ArrayList<>();
 
     public TaskList(TaskListRegistrationData data, User user) {
