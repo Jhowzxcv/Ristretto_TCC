@@ -1,8 +1,9 @@
-package com.Ristretto.API.infra.excepetion;
+package com.Ristretto.API.infra.exception;
 
+import com.Ristretto.API.infra.exception.Token.TokenException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ValidationException;
-import org.apache.tomcat.websocket.AuthenticationException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -57,6 +58,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity handleErrorBusinessRule(ValidationException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
+
+    @ExceptionHandler(TokenException.class)
+    public ResponseEntity handleTokenErrors(TokenException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ex.getMessage());
+    }
+
 
     private record ValidationErrorData(String field, String message) {
         public ValidationErrorData(FieldError error) {

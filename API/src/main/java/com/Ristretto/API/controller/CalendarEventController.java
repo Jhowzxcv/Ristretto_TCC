@@ -103,10 +103,11 @@ public class CalendarEventController {
             )
     })
     public ResponseEntity<Page<CalendarEventDataListing>> listing(
-            @PageableDefault
+            @PageableDefault(size = 20, page = 0, sort = "id") // Pode especificar defaults
             @Parameter(description = "Parâmetros de paginação (page, size, sort)")
-            @RequestParam Long userId,
-            Pageable pageable
+            Pageable pageable,
+
+            @RequestParam Long userId
     ){
         var page = service.findByUserId(pageable, userId).map(CalendarEventDataListing::new);
 
