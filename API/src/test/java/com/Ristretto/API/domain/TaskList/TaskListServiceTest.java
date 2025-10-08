@@ -89,21 +89,21 @@ class TaskListServiceTest {
     }
 
     @Test
-    void findById_ShouldReturnTaskList_WhenTaskListExists() {
+    void findByid_ShouldReturnTaskList_WhenTaskListExists() {
         when(repository.findById(taskListId)).thenReturn(Optional.of(mockTaskList));
 
-        TaskList result = taskListService.findById(taskListId);
+        TaskList result = taskListService.findByid(taskListId);
 
         assertEquals(mockTaskList, result);
         verify(repository, times(1)).findById(taskListId);
     }
 
     @Test
-    void findById_ShouldThrowException_WhenTaskListNotFound() {
+    void findByid_ShouldThrowException_WhenTaskListNotFound() {
         when(repository.findById(taskListId)).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> taskListService.findById(taskListId));
+                () -> taskListService.findByid(taskListId));
 
         assertEquals("TaskList not found with id: " + taskListId, exception.getMessage());
         verify(repository, times(1)).findById(taskListId);

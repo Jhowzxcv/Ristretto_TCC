@@ -20,7 +20,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -203,7 +202,7 @@ class SubTaskControllerTest {
     // ---------- TESTES DE ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedSubTask_WhenValidDataProvided() throws Exception {
-        when(service.findByid(subTaskId)).thenReturn(mockSubTask);
+        when(service.findById(subTaskId)).thenReturn(mockSubTask);
         when(service.save(any(SubTask.class))).thenReturn(mockSubTask);
 
         mockMvc.perform(put("/subtask")
@@ -211,7 +210,7 @@ class SubTaskControllerTest {
                         .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isOk());
 
-        verify(service, times(1)).findByid(subTaskId);
+        verify(service, times(1)).findById(subTaskId);
         verify(service, times(1)).save(any());
     }
 
@@ -225,7 +224,7 @@ class SubTaskControllerTest {
                 null
         );
 
-        when(service.findByid(subTaskId)).thenReturn(mockSubTask);
+        when(service.findById(subTaskId)).thenReturn(mockSubTask);
         when(service.save(any(SubTask.class))).thenReturn(mockSubTask);
 
         mockMvc.perform(put("/subtask")
@@ -233,7 +232,7 @@ class SubTaskControllerTest {
                         .content(objectMapper.writeValueAsString(partialData)))
                 .andExpect(status().isOk());
 
-        verify(service, times(1)).findByid(subTaskId);
+        verify(service, times(1)).findById(subTaskId);
         verify(service, times(1)).save(any());
     }
 
@@ -252,12 +251,12 @@ class SubTaskControllerTest {
                         .content(objectMapper.writeValueAsString(invalidDataNegative)))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).findByid(any());
+        verify(service, never()).findById(any());
     }
 
     @Test
     void update_ShouldReturnNotFound_WhenSubTaskNotFound() throws Exception {
-        when(service.findByid(subTaskId))
+        when(service.findById(subTaskId))
                 .thenThrow(new com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException("SubTask não encontrada"));
 
         mockMvc.perform(put("/subtask")
@@ -266,7 +265,7 @@ class SubTaskControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("\"Recurso não encontrado\""));
 
-        verify(service, times(1)).findByid(subTaskId);
+        verify(service, times(1)).findById(subTaskId);
         verify(service, never()).save(any());
     }
 

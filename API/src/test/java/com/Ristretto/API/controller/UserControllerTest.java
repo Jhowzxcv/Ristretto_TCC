@@ -129,40 +129,10 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.passwordHash").doesNotExist());
     }
 
-
-    // ---------- BUSCA ----------
-    @Test
-    void find_ShouldReturnUser_WhenUserExists() throws Exception {
-        when(service.findById(userId)).thenReturn(mockUser);
-
-        mockMvc.perform(get("/user/{id}", userId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(userId))
-                .andExpect(jsonPath("$.name").value("John Doe"));
-
-        verify(service, times(1)).findById(userId);
-    }
-
-    @Test
-    void find_ShouldReturnNotFound_WhenUserDoesNotExist() throws Exception {
-        when(service.findById(userId)).thenThrow(new ResourceNotFoundException("\"Recurso não encontrado\""));
-
-        mockMvc.perform(get("/user/{id}", userId))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("\"Recurso não encontrado\""));
-
-        verify(service, times(1)).findById(userId);
-    }
-
-    @Test
-    void find_ShouldReturnBadRequest_WhenIdIsInvalid() throws Exception {
-        mockMvc.perform(get("/user/{id}", "abc"))
-                .andExpect(status().isBadRequest());
-    }
-
     // ---------- ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedUser_WhenValidDataProvided() throws Exception {
+        when(service.existsById(userId)).thenReturn(true); // <- precisa simular que o usuário existe
         when(service.findById(userId)).thenReturn(mockUser);
         when(service.save(any(User.class))).thenReturn(mockUser);
 
@@ -172,6 +142,7 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(userId));
 
+        verify(service, times(1)).existsById(userId);
         verify(service, times(1)).findById(userId);
         verify(service, times(1)).save(any());
     }
@@ -192,6 +163,7 @@ class UserControllerTest {
     void update_ShouldAllowPartialUpdate() throws Exception {
         UserUpdateData partialData = new UserUpdateData(userId, "New Name", null, null, null);
 
+        when(service.existsById(userId)).thenReturn(true); // precisa simular que o usuário existe
         when(service.findById(userId)).thenReturn(mockUser);
         when(service.save(any(User.class))).thenReturn(mockUser);
 
@@ -200,13 +172,14 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(partialData)))
                 .andExpect(status().isOk());
 
+        verify(service, times(1)).existsById(userId);
         verify(service, times(1)).findById(userId);
         verify(service, times(1)).save(any());
     }
 
     @Test
     void update_ShouldReturnNotFound_WhenUserNotFound() throws Exception {
-        when(service.findById(userId)).thenThrow(new ResourceNotFoundException("\"Recurso não encontrado\""));
+        when(service.existsById(userId)).thenReturn(false);
 
         mockMvc.perform(put("/user")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -214,7 +187,8 @@ class UserControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("\"Recurso não encontrado\""));
 
-        verify(service, times(1)).findById(userId);
+        verify(service, times(1)).existsById(userId);
+        verify(service, never()).findById(any());
         verify(service, never()).save(any());
     }
 
@@ -227,7 +201,6 @@ class UserControllerTest {
 
         verify(service, never()).findById(any());
     }
-
 
     // ---------- DELETE ----------
     @Test

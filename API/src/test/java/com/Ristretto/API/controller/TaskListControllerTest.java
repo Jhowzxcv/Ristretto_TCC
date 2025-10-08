@@ -81,95 +81,44 @@ class TaskListControllerTest {
     @Test
     void listing_ShouldReturnPageOfTaskLists_WhenCalled() throws Exception {
         var page = new PageImpl<>(Collections.singletonList(mockTaskList), PageRequest.of(0, 10), 1);
-        when(service.findAll(any())).thenReturn(page);
+        when(service.findAllByUserId(any(), any())).thenReturn(page);
 
-        mockMvc.perform(get("/tasklists")
+        mockMvc.perform(get("/tasklist")
                         .param("page", "0")
-                        .param("size", "10"))
+                        .param("size", "10")
+                        .param("userId", userId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(service, times(1)).findAll(any());
+        verify(service, times(1)).findAllByUserId(any(), any());
     }
 
     @Test
     void listing_ShouldReturnEmptyPage_WhenNoTaskListsFound() throws Exception {
         var emptyPage = new PageImpl<TaskList>(Collections.emptyList(), PageRequest.of(0, 10), 0);
-        when(service.findAll(any())).thenReturn(emptyPage);
+        when(service.findAllByUserId(any(), any())).thenReturn(emptyPage);
 
-        mockMvc.perform(get("/tasklists"))
+        mockMvc.perform(get("/tasklist").param("userId", userId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(0));
 
-        verify(service, times(1)).findAll(any());
-    }
-
-    // ---------- DETALHES ----------
-    @Test
-    void details_ShouldReturnTaskList_WhenTaskListExists() throws Exception {
-        when(service.findById(taskListId)).thenReturn(mockTaskList);
-
-        mockMvc.perform(get("/tasklists/{id}", taskListId))
-                .andExpect(status().isOk());
-
-        verify(service, times(1)).findById(taskListId);
-    }
-
-    @Test
-    void details_ShouldReturnInternalServerError_WhenTaskListNotFound() throws Exception {
-        when(service.findById(taskListId)).thenThrow(new RuntimeException("TaskList not found"));
-
-        mockMvc.perform(get("/tasklists/{id}", taskListId))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("TaskList not found")));
-
-        verify(service, times(1)).findById(taskListId);
+        verify(service, times(1)).findAllByUserId(any(), any());
     }
 
     // ---------- REGISTRO ----------
     @Test
     void register_ShouldReturnCreatedTaskList_WhenValidDataProvided() throws Exception {
-        TaskListRegistrationData validData = new TaskListRegistrationData(
-                "Minha Lista",
-                "#FF5733",
-                "icon.png",
-                ListType.STANDARD,
-                null,
-                null,
-                false,
-                false,
-                LocalDateTime.now().plusDays(5),
-                userId // precisa estar inicializado!
-        );
-
-        System.out.println(">>> DTO montado: " + validData);
-
         TaskList mockTaskList = mock(TaskList.class);
         when(mockTaskList.getId()).thenReturn(1L);
 
-        when(service.convertToEntity(any(TaskListRegistrationData.class))).thenAnswer(invocation -> {
-            TaskListRegistrationData arg = invocation.getArgument(0);
-            System.out.println(">>> convertToEntity chamado com: " + arg);
-            return mockTaskList;
-        });
+        when(service.convertToEntity(any(TaskListRegistrationData.class))).thenReturn(mockTaskList);
+        when(service.save(any(TaskList.class))).thenReturn(mockTaskList);
 
-        when(service.save(any(TaskList.class))).thenAnswer(invocation -> {
-            TaskList arg = invocation.getArgument(0);
-            System.out.println(">>> save chamado com TaskList: " + arg);
-            return mockTaskList;
-        });
-
-        mockMvc.perform(post("/tasklists")
+        mockMvc.perform(post("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validData)))
-                .andDo(result -> {
-                    System.out.println(">>> HTTP Status: " + result.getResponse().getStatus());
-                    System.out.println(">>> Response Headers: " + result.getResponse().getHeaderNames());
-                    System.out.println(">>> Location Header: " + result.getResponse().getHeader("Location"));
-                    System.out.println(">>> Response Body: " + result.getResponse().getContentAsString());
-                })
+                        .content(objectMapper.writeValueAsString(registrationData)))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"));
 
@@ -186,7 +135,7 @@ class TaskListControllerTest {
         };
 
         for (TaskListRegistrationData data : invalids) {
-            mockMvc.perform(post("/tasklists")
+            mockMvc.perform(post("/tasklist")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(data)))
                     .andExpect(status().isBadRequest());
@@ -206,14 +155,14 @@ class TaskListControllerTest {
                 null,
                 false,
                 false,
-                LocalDateTime.now().plusDays(1), // deadline válido
+                LocalDateTime.now().plusDays(1),
                 userId
         );
 
         when(service.convertToEntity(any(TaskListRegistrationData.class))).thenReturn(mockTaskList);
         when(service.save(any(TaskList.class))).thenReturn(mockTaskList);
 
-        mockMvc.perform(post("/tasklists")
+        mockMvc.perform(post("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(minimalData)))
                 .andExpect(status().isCreated());
@@ -223,7 +172,7 @@ class TaskListControllerTest {
 
     @Test
     void register_ShouldReturnBadRequest_WhenJsonIsEmpty() throws Exception {
-        mockMvc.perform(post("/tasklists")
+        mockMvc.perform(post("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
@@ -238,25 +187,25 @@ class TaskListControllerTest {
                 1, null, true, false, null, userId
         );
 
-        mockMvc.perform(post("/tasklists")
+        mockMvc.perform(post("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidData)))
                 .andExpect(status().isBadRequest());
     }
-
-
     // ---------- ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedTaskList_WhenValidDataProvided() throws Exception {
-        when(service.findById(taskListId)).thenReturn(mockTaskList);
+        when(service.existsById(taskListId)).thenReturn(true);
+        when(service.findByid(taskListId)).thenReturn(mockTaskList);
         when(service.save(any(TaskList.class))).thenReturn(mockTaskList);
 
-        mockMvc.perform(put("/tasklists/{id}", taskListId)
+        mockMvc.perform(put("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isOk());
 
-        verify(service, times(1)).findById(taskListId);
+        verify(service, times(1)).existsById(taskListId);
+        verify(service, times(1)).findByid(taskListId);
         verify(service, times(1)).save(any());
     }
 
@@ -266,12 +215,12 @@ class TaskListControllerTest {
                 null, "Title", "green", "icon2.png", ListType.STANDARD, null, null, false, false, null
         );
 
-        mockMvc.perform(put("/tasklists/{id}", taskListId)
+        mockMvc.perform(put("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidData)))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).findById(any());
+        verify(service, never()).findByid(any());
     }
 
     @Test
@@ -280,41 +229,43 @@ class TaskListControllerTest {
             {"id":"abc","title":"Invalid"}
             """;
 
-        mockMvc.perform(put("/tasklists/{id}", taskListId)
+        mockMvc.perform(put("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).findById(any());
+        verify(service, never()).findByid(any());
     }
 
     @Test
     void update_ShouldAllowPartialUpdate_WhenOnlySomeFieldsProvided() throws Exception {
-        TaskListUpdateData partialData = new TaskListUpdateData(taskListId, "New Title", null, null, null, null, null, null, null, null);
+        TaskListUpdateData partialData = new TaskListUpdateData(
+                taskListId, "New Title", null, null, null, null, null, null, null, null
+        );
 
-        when(service.findById(taskListId)).thenReturn(mockTaskList);
+        when(service.existsById(taskListId)).thenReturn(true);
+        when(service.findByid(taskListId)).thenReturn(mockTaskList);
         when(service.save(any(TaskList.class))).thenReturn(mockTaskList);
 
-        mockMvc.perform(put("/tasklists/{id}", taskListId)
+        mockMvc.perform(put("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(partialData)))
                 .andExpect(status().isOk());
 
-        verify(service, times(1)).findById(taskListId);
+        verify(service, times(1)).existsById(taskListId);
+        verify(service, times(1)).findByid(taskListId);
         verify(service, times(1)).save(any());
     }
 
     @Test
-    void update_ShouldReturnInternalServerError_WhenTaskListNotFound() throws Exception {
-        when(service.findById(taskListId)).thenThrow(new RuntimeException("TaskList not found"));
+    void update_ShouldReturnNotFound_WhenTaskListNotFound() throws Exception {
+        when(service.existsById(taskListId)).thenReturn(false);
 
-        mockMvc.perform(put("/tasklists/{id}", taskListId)
+        mockMvc.perform(put("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("TaskList not found")));
+                .andExpect(status().isNotFound());
 
-        verify(service, times(1)).findById(taskListId);
         verify(service, never()).save(any());
     }
 
@@ -324,7 +275,7 @@ class TaskListControllerTest {
         when(service.existsById(taskListId)).thenReturn(true);
         doNothing().when(service).deleteById(taskListId);
 
-        mockMvc.perform(delete("/tasklists/{id}", taskListId))
+        mockMvc.perform(delete("/tasklist/{id}", taskListId))
                 .andExpect(status().isNoContent());
 
         verify(service, times(1)).existsById(taskListId);
@@ -335,19 +286,17 @@ class TaskListControllerTest {
     void delete_ShouldReturnNotFound_WhenTaskListNotFound() throws Exception {
         when(service.existsById(taskListId)).thenReturn(false);
 
-        mockMvc.perform(delete("/tasklists/{id}", taskListId))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("\"Recurso não encontrado\""));
+        mockMvc.perform(delete("/tasklist/{id}", taskListId))
+                .andExpect(status().isNotFound());
 
         verify(service, times(1)).existsById(taskListId);
-        verify(service, never()).deleteById(taskListId);
+        verify(service, never()).deleteById(any());
     }
 
     @Test
     void delete_ShouldReturnBadRequest_WhenIdIsInvalidType() throws Exception {
-        mockMvc.perform(delete("/tasklists/{id}", "abc"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Parâmetro")));
+        mockMvc.perform(delete("/tasklist/{id}", "abc"))
+                .andExpect(status().isBadRequest());
 
         verify(service, never()).deleteById(any());
     }

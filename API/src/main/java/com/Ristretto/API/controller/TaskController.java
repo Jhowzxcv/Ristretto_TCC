@@ -22,7 +22,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/task")
-@Tag(name = "Task", description = "gerenciamento de tarefas do usuario")
+@Tag(name = "Task", description = "Gerenciamento de tarefas do usuário")
 public class TaskController {
 
     @Autowired
@@ -30,145 +30,88 @@ public class TaskController {
 
     @PostMapping
     @Transactional
-    @Operation(
-            summary = "Criar nova tarefa",
-            description = "Cria uma nova tarefa no sistema"
-    )
+    @Operation(summary = "Criar nova tarefa", description = "Cria uma nova tarefa no sistema")
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Tarefa criada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = TaskDataDetails.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Dados inválidos fornecidos",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Dados de entrada inválidos\" }")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
+            @ApiResponse(responseCode = "201", description = "Tarefa criada com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TaskDataDetails.class))),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Dados de entrada inválidos\" }"))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
-    public ResponseEntity register(@RequestBody @Valid TaskRegistrationData data, UriComponentsBuilder uriBuilder) {
-        var task = service.createTask(data);
-
-        var uri = uriBuilder.path("/task/{id}").buildAndExpand(task.getId()).toUri();
-
-        return ResponseEntity.created(uri).body(new TaskDataDetails(task));
+    public ResponseEntity<TaskDataDetails> register(@RequestBody @Valid TaskRegistrationData data,
+                                                    UriComponentsBuilder uriBuilder) {
+        var task = service.convertToEntity(data);
+        var saved = service.save(task); // usa o retorno do save
+        var uri = uriBuilder.path("/task/{id}").buildAndExpand(saved.getId()).toUri();
+        return ResponseEntity.created(uri).body(new TaskDataDetails(saved));
     }
 
     @GetMapping
-    @Operation(
-            summary = "Listar tarefas",
-            description = "Retorna uma lista paginada de tarefas"
-    )
+    @Operation(summary = "Listar tarefas", description = "Retorna uma lista paginada de tarefas de um usuário")
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Lista de tarefas recuperada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = TaskDataListing.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
+            @ApiResponse(responseCode = "200", description = "Lista de tarefas recuperada com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TaskDataListing.class))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<Page<TaskDataListing>> listing(
-            @RequestParam(required = false) Long userId,
-            @PageableDefault(sort = {"priority", "dueDate"}, direction = Sort.Direction.ASC) Pageable pageable
+            @PageableDefault(sort = {"dueDate"}, direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam
+            @Parameter(description = "ID do usuário para filtrar tarefas", required = true, example = "1")
+            Long userId
     ) {
-        if (userId == null) {
-            throw new IllegalArgumentException("userId é obrigatório");
-        }
         var page = service.findAllByUserId(userId, pageable).map(TaskDataListing::new);
         return ResponseEntity.ok(page);
     }
 
-
     @PutMapping
     @Transactional
-    @Operation(
-            summary = "Atualizar tarefa",
-            description = "Atualiza as informações de uma tarefa existente pelo ID"
-    )
+    @Operation(summary = "Atualizar tarefa", description = "Atualiza as informações de uma tarefa existente pelo ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tarefa atualizada com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }")
-                    )
-            ),
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }"))),
             @ApiResponse(responseCode = "404", description = "Tarefa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }")
-                    )
-            ),
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<TaskDataDetails> update(
-            @RequestBody @Valid TaskUpdateData data
-    ) {
+    public ResponseEntity<TaskDataDetails> update(@RequestBody @Valid TaskUpdateData data) {
+        if (!service.existsById(data.id())) {
+            throw new ResourceNotFoundException("Tarefa não encontrada");
+        }
         var task = service.findById(data.id());
         task.update(data);
-        service.save(task);
-        return ResponseEntity.ok(new TaskDataDetails(task));
+        var saved = service.save(task);
+        return ResponseEntity.ok(new TaskDataDetails(saved));
     }
 
     @DeleteMapping("/{id}")
     @Transactional
-    @Operation(
-            summary = "Deletar tarefa",
-            description = "Remove uma tarefa do sistema pelo ID"
-    )
+    @Operation(summary = "Deletar tarefa", description = "Remove uma tarefa do sistema pelo ID")
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Tarefa deletada com sucesso"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Tarefa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
+            @ApiResponse(responseCode = "204", description = "Tarefa deletada com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Tarefa não encontrada",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }"))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<Void> delete(
             @PathVariable
             @Parameter(description = "ID da tarefa a ser deletada", required = true, example = "1")
             Long id
-    ){
+    ) {
         if (!service.existsById(id)) {
-            throw new ResourceNotFoundException("Categoria não encontrada");
+            throw new ResourceNotFoundException("Tarefa não encontrada");
         }
         service.deleteById(id);
         return ResponseEntity.noContent().build();

@@ -29,82 +29,45 @@ public class GoalController {
 
     @PostMapping
     @Transactional
-    @Operation(
-            summary = "Registrar nova meta",
-            description = "Registra uma nova meta para o usuário"
-    )
+    @Operation(summary = "Registrar nova meta", description = "Registra uma nova meta para o usuário")
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Meta registrada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = GoalDataDetails.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Dados inválidos fornecidos",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Dados de entrada inválidos\" }")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
+            @ApiResponse(responseCode = "201", description = "Meta registrada com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = GoalDataDetails.class))),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Dados de entrada inválidos\" }"))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
-    public ResponseEntity register(@RequestBody @Valid GoalRegistrationData data,
-                                   UriComponentsBuilder uriBuilder) {
-        try {
-            var goal = service.convertToEntity(data);
-            service.save(goal);
+    public ResponseEntity<?> register(@RequestBody @Valid GoalRegistrationData data,
+                                      UriComponentsBuilder uriBuilder) {
+        var goal = service.convertToEntity(data);
+        service.save(goal);
 
-            var uri = uriBuilder
-                    .path("/goal/{id}")
-                    .buildAndExpand(goal.getId())
-                    .toUri();
+        var uri = uriBuilder.path("/goal/{id}")
+                .buildAndExpand(goal.getId())
+                .toUri();
 
-            return ResponseEntity.created(uri).body(new GoalDataDetails(goal));
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.created(uri).body(new GoalDataDetails(goal));
     }
 
     @GetMapping
-    @Operation(
-            summary = "Listar metas relacionadas a um usuário",
-            description = "Retorna uma lista paginada de metas"
-    )
+    @Operation(summary = "Listar metas", description = "Retorna uma lista paginada de metas de um usuário")
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Lista de metas recuperada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = GoalDataListing.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
+            @ApiResponse(responseCode = "200", description = "Lista de metas recuperada com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = GoalDataListing.class))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<Page<GoalDataListing>> listing(
-            @PageableDefault
-            @Parameter(description = "Parâmetros de paginação (page, size, sort)")
-            @RequestParam Long userId,
-            Pageable pageable
+            @PageableDefault Pageable pageable,
+            @RequestParam
+            @Parameter(description = "ID do usuário para filtrar metas", required = true, example = "1")
+            Long userId
     ) {
         var page = service.findByUserId(pageable, userId).map(GoalDataListing::new);
         return ResponseEntity.ok(page);
@@ -112,29 +75,18 @@ public class GoalController {
 
     @PutMapping
     @Transactional
-    @Operation(
-            summary = "Atualizar meta",
-            description = "Atualiza as informações de uma meta existente pelo ID"
-    )
+    @Operation(summary = "Atualizar meta", description = "Atualiza as informações de uma meta existente pelo ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Meta atualizada com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }")
-                    )
-            ),
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }"))),
             @ApiResponse(responseCode = "404", description = "Meta não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Meta não encontrada\" }")
-                    )
-            ),
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Meta não encontrada\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<GoalDataDetails> update(
-            @RequestBody @Valid GoalUpdateData data
-    ) {
+    public ResponseEntity<GoalDataDetails> update(@RequestBody @Valid GoalUpdateData data) {
         var goal = service.findById(data.id());
         goal.update(data);
         service.save(goal);
@@ -143,31 +95,15 @@ public class GoalController {
 
     @DeleteMapping("/{id}")
     @Transactional
-    @Operation(
-            summary = "Deletar meta",
-            description = "Remove uma meta do sistema pelo ID"
-    )
+    @Operation(summary = "Deletar meta", description = "Remove uma meta do sistema pelo ID")
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Meta deletada com sucesso"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Meta não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Meta não encontrada\" }")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
+            @ApiResponse(responseCode = "204", description = "Meta deletada com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Meta não encontrada",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Meta não encontrada\" }"))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<Void> delete(
             @PathVariable
@@ -175,7 +111,7 @@ public class GoalController {
             Long id
     ) {
         if (!service.existsById(id)) {
-            throw new ResourceNotFoundException("Categoria não encontrada");
+            throw new ResourceNotFoundException("Meta não encontrada");
         }
         service.deleteById(id);
         return ResponseEntity.noContent().build();

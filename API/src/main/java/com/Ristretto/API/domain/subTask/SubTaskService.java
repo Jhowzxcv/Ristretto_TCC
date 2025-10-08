@@ -47,7 +47,7 @@ public class SubTaskService {
         repository.deleteById(id);
     }
 
-    public SubTask findByid(Long id) {
+    public SubTask findById(Long id) {
         return repository.getReferenceById(id);
     }
 

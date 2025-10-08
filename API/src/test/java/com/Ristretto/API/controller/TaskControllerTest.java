@@ -102,7 +102,19 @@ class TaskControllerTest {
     // ---------- REGISTRO ----------
     @Test
     void register_ShouldReturnCreatedTask_WhenValidDataProvided() throws Exception {
-        when(service.createTask(any(TaskRegistrationData.class))).thenReturn(mockTask);
+        when(service.convertToEntity(any(TaskRegistrationData.class))).thenAnswer(invocation -> {
+            TaskRegistrationData data = invocation.getArgument(0);
+            Task task = new Task();
+            task.setId(taskId);
+            task.setTitle(data.title());
+            task.setDescription(data.description());
+            task.setDueDate(data.dueDate());
+            task.setPriority(data.priority());
+            task.setStatus(data.status());
+            return task;
+        });
+
+        when(service.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(post("/task")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -112,7 +124,8 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.id").value(taskId))
                 .andExpect(jsonPath("$.title").value("Complete Documentation"));
 
-        verify(service, times(1)).createTask(any(TaskRegistrationData.class));
+        verify(service, times(1)).convertToEntity(any(TaskRegistrationData.class));
+        verify(service, times(1)).save(any(Task.class));
     }
 
     @Test
@@ -141,24 +154,34 @@ class TaskControllerTest {
                     .andExpect(status().isBadRequest());
         }
 
-        verify(service, never()).createTask(any());
+        verify(service, never()).convertToEntity(any());
     }
 
     @Test
     void register_ShouldAcceptTask_WithoutOptionalFields() throws Exception {
+        when(service.convertToEntity(any(TaskRegistrationData.class))).thenAnswer(invocation -> {
+            Task task = new Task();
+            task.setId(taskId);
+            task.setTitle("Minimal Task");
+            task.setPriority(Priority.LOW);
+            task.setStatus(Status.NOT_STARTED);
+            return task;
+        });
+
+        when(service.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
         TaskRegistrationData minimalData = new TaskRegistrationData(
                 "Minimal Task", null, null, Priority.LOW, Status.NOT_STARTED, userId,
                 null, null, null, null, null
         );
-
-        when(service.createTask(any(TaskRegistrationData.class))).thenReturn(mockTask);
 
         mockMvc.perform(post("/task")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(minimalData)))
                 .andExpect(status().isCreated());
 
-        verify(service, times(1)).createTask(any());
+        verify(service, times(1)).convertToEntity(any());
+        verify(service, times(1)).save(any());
     }
 
     @Test
@@ -168,7 +191,7 @@ class TaskControllerTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).createTask(any());
+        verify(service, never()).convertToEntity(any());
     }
 
     @Test
@@ -182,7 +205,6 @@ class TaskControllerTest {
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
     }
-
 
     // ---------- LISTAGEM ----------
     @Test
@@ -218,22 +240,18 @@ class TaskControllerTest {
 
     @Test
     void listing_ShouldReturnBadRequest_WhenUserIdMissing() throws Exception {
-        // Se a regra de negócio for realmente exigir userId, o controller deve validar isso.
-        // Mas para evitar NPE no mock, configuramos um retorno padrão.
-        when(service.findAll(any())).thenReturn(Page.empty());
-
         mockMvc.perform(get("/task")
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).findAll(any()); // se o controller valida antes, nem chama o service
+        verify(service, never()).findAll(any());
     }
-
 
     // ---------- ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedTask_WhenValidDataProvided() throws Exception {
+        when(service.existsById(taskId)).thenReturn(true);
         when(service.findById(taskId)).thenReturn(mockTask);
         when(service.save(any(Task.class))).thenReturn(mockTask);
 
@@ -243,6 +261,7 @@ class TaskControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(taskId));
 
+        verify(service, times(1)).existsById(taskId);
         verify(service, times(1)).findById(taskId);
         verify(service, times(1)).save(any(Task.class));
     }
@@ -279,8 +298,11 @@ class TaskControllerTest {
 
     @Test
     void update_ShouldAllowPartialUpdate_WhenOnlySomeFieldsProvided() throws Exception {
-        TaskUpdateData partialData = new TaskUpdateData(taskId, "New Title", null, null, null, null, null, null, null, null);
+        TaskUpdateData partialData = new TaskUpdateData(
+                taskId, "New Title", null, null, null, null, null, null, null, null
+        );
 
+        when(service.existsById(taskId)).thenReturn(true);
         when(service.findById(taskId)).thenReturn(mockTask);
         when(service.save(any(Task.class))).thenReturn(mockTask);
 
@@ -289,21 +311,22 @@ class TaskControllerTest {
                         .content(objectMapper.writeValueAsString(partialData)))
                 .andExpect(status().isOk());
 
+        verify(service, times(1)).existsById(taskId);
         verify(service, times(1)).findById(taskId);
         verify(service, times(1)).save(any());
     }
 
     @Test
-    void update_ShouldReturnInternalServerError_WhenTaskNotFound() throws Exception {
-        when(service.findById(taskId)).thenThrow(new RuntimeException("Task not found"));
+    void update_ShouldReturnNotFound_WhenTaskNotFound() throws Exception {
+        when(service.existsById(taskId)).thenReturn(false);
 
         mockMvc.perform(put("/task")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Task not found")));
+                .andExpect(status().isNotFound());
 
-        verify(service, times(1)).findById(taskId);
+        verify(service, times(1)).existsById(taskId);
+        verify(service, never()).findById(any());
         verify(service, never()).save(any());
     }
 
@@ -319,10 +342,8 @@ class TaskControllerTest {
                         .content(objectMapper.writeValueAsString(invalidData)))
                 .andExpect(status().isBadRequest());
 
-        // Nenhuma interação com o service deve acontecer
         verifyNoInteractions(service);
     }
-
 
     // ---------- DELETE ----------
     @Test

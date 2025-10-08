@@ -24,7 +24,7 @@ public class TaskListService {
         return repository.findAll(pageable);
     }
 
-    public TaskList findById(Long id) {
+    public TaskList findByid(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("TaskList not found with id: " + id));
     }
@@ -45,5 +45,9 @@ public class TaskListService {
 
     public boolean existsById(Long id) {
         return repository.existsById(id);
+    }
+
+    public Page<TaskList> findAllByUserId(Pageable pageable, Long userId) {
+        return repository.findAllByUserId(pageable, userId);
     }
 }
