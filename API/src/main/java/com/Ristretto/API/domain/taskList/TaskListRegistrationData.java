@@ -1,6 +1,8 @@
 package com.Ristretto.API.domain.taskList;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -21,4 +23,21 @@ public record TaskListRegistrationData(
         LocalDateTime deadline,
         @NotNull(message = "{user.required}")
         Long userId
-){}
+){
+        @AssertTrue(message = "Repetition type is required for cyclic lists")
+        @JsonIgnore
+        public boolean isRepetitionValid() {
+                if (type == ListType.CYCLIC) {
+                        return repetitionIntervalType != null && repetitionIntervalAmount != null;
+                }
+                return true;
+        }
+        @AssertTrue(message = "Deadline is required for standard lists")
+        @JsonIgnore
+        public boolean isDeadlineValid() {
+                if (type == ListType.STANDARD) {
+                        return deadline != null;
+                }
+                return true;
+        }
+}

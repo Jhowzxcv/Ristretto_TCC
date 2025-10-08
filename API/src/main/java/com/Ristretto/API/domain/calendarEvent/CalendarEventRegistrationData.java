@@ -4,10 +4,11 @@ import com.Ristretto.API.validation.ChronologicalDates;
 import com.Ristretto.API.validation.ValidRRule;
 import com.Ristretto.API.validation.ValidTimezone;
 import jakarta.validation.constraints.*;
-
+import com.Ristretto.API.validation.ConsistentRepetition;
 import java.time.LocalDateTime;
 
 @ChronologicalDates(start = "startDate", end = "endDate")
+@ConsistentRepetition
 public record CalendarEventRegistrationData(
         @NotBlank(message = "{title.required}")
         String title,
@@ -41,5 +42,4 @@ public record CalendarEventRegistrationData(
         String repetitionRule,
 
         Boolean tactileReminder
-) {
-}
+) {}

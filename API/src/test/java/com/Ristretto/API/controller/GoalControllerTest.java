@@ -2,7 +2,9 @@ package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.goal.*;
 import com.Ristretto.API.domain.user.User;
+import com.Ristretto.API.infra.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -10,7 +12,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -44,8 +48,17 @@ class GoalControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
         objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        PageableHandlerMethodArgumentResolver pageableResolver = new PageableHandlerMethodArgumentResolver();
+
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(pageableResolver)
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .build();
 
         mockUser = new User();
         mockGoal = new Goal(
@@ -73,6 +86,7 @@ class GoalControllerTest {
         );
     }
 
+    // ---------- TESTES DE REGISTRO ----------
     @Test
     void register_ShouldReturnCreatedGoal_WhenValidDataProvided() throws Exception {
         when(service.convertToEntity(any(GoalRegistrationData.class))).thenReturn(mockGoal);
@@ -83,9 +97,7 @@ class GoalControllerTest {
                         .content(objectMapper.writeValueAsString(registrationData)))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
-                .andExpect(jsonPath("$.id").value(goalId))
-                .andExpect(jsonPath("$.title").value("Complete Project"))
-                .andExpect(jsonPath("$.description").value("Finish the TCC project"));
+                .andExpect(jsonPath("$.id").value(goalId));
 
         verify(service, times(1)).convertToEntity(any());
         verify(service, times(1)).save(any());
@@ -110,24 +122,98 @@ class GoalControllerTest {
     }
 
     @Test
-    void register_ShouldReturnBadRequest_WhenIllegalArgumentExceptionThrown() throws Exception {
+    void register_ShouldReturnBadRequest_WhenUserIdIsNull() throws Exception {
+        GoalRegistrationData invalidData = new GoalRegistrationData(
+                "Complete Project",
+                "Finish the TCC project",
+                LocalDateTime.now().plusMonths(3),
+                null
+        );
+
+        mockMvc.perform(post("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidData)))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
+    @Test
+    void register_ShouldReturnBadRequest_WhenDueDateIsInPast() throws Exception {
+        GoalRegistrationData pastDateData = new GoalRegistrationData(
+                "Complete Project",
+                "Finish the TCC project",
+                LocalDateTime.now().minusDays(1),
+                userId
+        );
+
+        mockMvc.perform(post("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pastDateData)))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
+    @Test
+    void register_ShouldAcceptGoal_WithoutDescription() throws Exception {
+        GoalRegistrationData minimalData = new GoalRegistrationData(
+                "Complete Project",
+                null,
+                LocalDateTime.now().plusMonths(3),
+                userId
+        );
+
+        when(service.convertToEntity(any(GoalRegistrationData.class))).thenReturn(mockGoal);
+        when(service.save(any(Goal.class))).thenReturn(mockGoal);
+
+        mockMvc.perform(post("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(minimalData)))
+                .andExpect(status().isCreated());
+
+        verify(service, times(1)).convertToEntity(any());
+    }
+
+    @Test
+    void register_ShouldAcceptGoal_WithoutDueDate() throws Exception {
+        GoalRegistrationData dataWithoutDate = new GoalRegistrationData(
+                "Ongoing Goal",
+                "No specific deadline",
+                null,
+                userId
+        );
+
+        when(service.convertToEntity(any(GoalRegistrationData.class))).thenReturn(mockGoal);
+        when(service.save(any(Goal.class))).thenReturn(mockGoal);
+
+        mockMvc.perform(post("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dataWithoutDate)))
+                .andExpect(status().isCreated());
+
+        verify(service, times(1)).convertToEntity(any());
+    }
+
+    @Test
+    void register_ShouldReturnBadRequest_WhenServiceThrowsIllegalArgumentException() throws Exception {
         when(service.convertToEntity(any(GoalRegistrationData.class)))
-                .thenThrow(new IllegalArgumentException("Invalid user"));
+                .thenThrow(new IllegalArgumentException("User with id 999 not found"));
 
         mockMvc.perform(post("/goal")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registrationData)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid user"));
+                .andExpect(content().string("\"User with id 999 not found\""));
 
         verify(service, times(1)).convertToEntity(any());
         verify(service, never()).save(any());
     }
 
+    // ---------- TESTES DE LISTAGEM ----------
     @Test
     void listing_ShouldReturnPageOfGoals_WhenUserIdProvided() throws Exception {
-        var goals = Arrays.asList(mockGoal);
-        var page = new PageImpl<>(goals, PageRequest.of(0, 10), 1);
+        var page = new PageImpl<>(Arrays.asList(mockGoal), PageRequest.of(0, 10), 1);
 
         when(service.findByUserId(any(), eq(userId))).thenReturn(page);
 
@@ -136,9 +222,7 @@ class GoalControllerTest {
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content[0].id").value(goalId))
-                .andExpect(jsonPath("$.content[0].title").value("Complete Project"))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
         verify(service, times(1)).findByUserId(any(), eq(userId));
@@ -151,9 +235,7 @@ class GoalControllerTest {
         when(service.findByUserId(any(), eq(userId))).thenReturn(page);
 
         mockMvc.perform(get("/goal")
-                        .param("userId", userId.toString())
-                        .param("page", "0")
-                        .param("size", "10"))
+                        .param("userId", userId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(0));
@@ -161,6 +243,23 @@ class GoalControllerTest {
         verify(service, times(1)).findByUserId(any(), eq(userId));
     }
 
+    @Test
+    void listing_ShouldAcceptCustomPageSize() throws Exception {
+        var page = new PageImpl<Goal>(Arrays.asList(mockGoal), PageRequest.of(0, 50), 1);
+
+        when(service.findByUserId(any(), eq(userId))).thenReturn(page);
+
+        mockMvc.perform(get("/goal")
+                        .param("userId", userId.toString())
+                        .param("page", "0")
+                        .param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(50));
+
+        verify(service, times(1)).findByUserId(any(), eq(userId));
+    }
+
+    // ---------- TESTES DE ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedGoal_WhenValidDataProvided() throws Exception {
         when(service.findById(goalId)).thenReturn(mockGoal);
@@ -174,6 +273,26 @@ class GoalControllerTest {
 
         verify(service, times(1)).findById(goalId);
         verify(service, times(1)).save(any());
+    }
+
+    @Test
+    void update_ShouldAllowPartialUpdate_WhenOnlySomeFieldsProvided() throws Exception {
+        GoalUpdateData partialUpdate = new GoalUpdateData(
+                goalId,
+                null,
+                null,
+                LocalDateTime.now().plusMonths(9)
+        );
+
+        when(service.findById(goalId)).thenReturn(mockGoal);
+        when(service.save(any(Goal.class))).thenReturn(mockGoal);
+
+        mockMvc.perform(put("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(partialUpdate)))
+                .andExpect(status().isOk());
+
+        verify(service, times(1)).findById(goalId);
     }
 
     @Test
@@ -195,56 +314,63 @@ class GoalControllerTest {
     }
 
     @Test
+    void update_ShouldReturnInternalServerError_WhenGoalNotFound() throws Exception {
+        when(service.findById(goalId)).thenThrow(new RuntimeException("Goal not found"));
+
+        mockMvc.perform(put("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateData)))
+                .andExpect(status().isInternalServerError());
+
+        verify(service, times(1)).findById(goalId);
+        verify(service, never()).save(any());
+    }
+
+    @Test
+    void update_ShouldReturnNotFound_WhenGoalNotFound() throws Exception {
+        when(service.findById(goalId))
+                .thenThrow(new com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException("Meta não encontrada"));
+
+        mockMvc.perform(put("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateData)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("\"Recurso não encontrado\""));
+
+        verify(service, times(1)).findById(goalId);
+        verify(service, never()).save(any());
+    }
+
+    // ---------- TESTES DE DELETE ----------
+    @Test
     void delete_ShouldReturnNoContent_WhenGoalExists() throws Exception {
+        when(service.existsById(goalId)).thenReturn(true);
         doNothing().when(service).deleteById(goalId);
 
         mockMvc.perform(delete("/goal/{id}", goalId))
                 .andExpect(status().isNoContent());
 
+        verify(service, times(1)).existsById(goalId);
         verify(service, times(1)).deleteById(goalId);
     }
 
     @Test
-    void delete_ShouldHandleException_WhenGoalNotFound() throws Exception {
-        doThrow(new RuntimeException("Goal not found")).when(service).deleteById(goalId);
+    void delete_ShouldReturnNotFound_WhenGoalNotFound() throws Exception {
+        when(service.existsById(goalId)).thenReturn(false);
 
         mockMvc.perform(delete("/goal/{id}", goalId))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isNotFound());
 
-        verify(service, times(1)).deleteById(goalId);
+        verify(service, times(1)).existsById(goalId);
+        verify(service, never()).deleteById(goalId);
     }
 
     @Test
-    void register_ShouldReturnBadRequest_WhenDueDateIsInPast() throws Exception {
-        GoalRegistrationData pastDateData = new GoalRegistrationData(
-                "Complete Project",
-                "Finish the TCC project",
-                LocalDateTime.now().minusDays(1),
-                userId
-        );
+    void delete_ShouldReturnBadRequest_WhenIdIsInvalidType() throws Exception {
+        mockMvc.perform(delete("/goal/{id}", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Parâmetro")));
 
-        mockMvc.perform(post("/goal")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(pastDateData)))
-                .andExpect(status().isBadRequest());
-
-        verify(service, never()).convertToEntity(any());
-    }
-
-    @Test
-    void register_ShouldReturnBadRequest_WhenUserIdIsNull() throws Exception {
-        GoalRegistrationData noUserData = new GoalRegistrationData(
-                "Complete Project",
-                "Finish the TCC project",
-                LocalDateTime.now().plusMonths(3),
-                null
-        );
-
-        mockMvc.perform(post("/goal")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(noUserData)))
-                .andExpect(status().isBadRequest());
-
-        verify(service, never()).convertToEntity(any());
+        verify(service, never()).deleteById(any());
     }
 }

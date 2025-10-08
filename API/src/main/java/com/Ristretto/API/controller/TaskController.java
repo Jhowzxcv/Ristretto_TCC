@@ -1,6 +1,7 @@
 package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.task.*;
+import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -91,14 +92,16 @@ public class TaskController {
             )
     })
     public ResponseEntity<Page<TaskDataListing>> listing(
-            @PageableDefault(sort = {"priority", "dueDate"}, direction = Sort.Direction.ASC)
-            @Parameter(description = "Parâmetros de paginação (page, size, sort)")
-            Pageable pageable
-    ){
-        var page = service.findAll(pageable).map(TaskDataListing::new);
-
+            @RequestParam(required = false) Long userId,
+            @PageableDefault(sort = {"priority", "dueDate"}, direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId é obrigatório");
+        }
+        var page = service.findAllByUserId(userId, pageable).map(TaskDataListing::new);
         return ResponseEntity.ok(page);
     }
+
 
     @PutMapping
     @Transactional
@@ -164,6 +167,9 @@ public class TaskController {
             @Parameter(description = "ID da tarefa a ser deletada", required = true, example = "1")
             Long id
     ){
+        if (!service.existsById(id)) {
+            throw new ResourceNotFoundException("Categoria não encontrada");
+        }
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }

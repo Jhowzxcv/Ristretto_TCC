@@ -55,9 +55,9 @@ public class User implements UserDetails {
         this.name = data.name();
         this.email = data.email();
         this.passwordHash = data.password();
-        this.theme = data.theme();
-        this.defaultReminderMin = data.defaultReminderMin();
         this.avatarUrl = data.avatarUrl();
+        this.theme = (data.theme() != null) ? data.theme() : Theme.LIGHT;
+        this.defaultReminderMin = (data.defaultReminderMin() != null) ? data.defaultReminderMin() : 15;
     }
 
     public User(String name, String email, String passwordHash, Theme theme,

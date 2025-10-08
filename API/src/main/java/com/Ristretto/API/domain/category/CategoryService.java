@@ -48,5 +48,10 @@ public class CategoryService {
 
     public void deleteById(Long id) {
         repository.deleteById(id);
+        repository.flush();
+    }
+
+    public boolean existsById(Long id) {
+        return repository.existsById(id);
     }
 }

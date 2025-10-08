@@ -159,10 +159,10 @@ class TaskServiceTest {
         assertEquals(mockGoal, result.getGoal());
         assertNull(result.getTaskList());
 
-        verify(entityManager, times(1)).getReference(User.class, 1L);
-        verify(entityManager, times(1)).getReference(Category.class, 2L);
-        verify(entityManager, times(1)).getReference(Goal.class, 3L);
-        verify(entityManager, never()).getReference(TaskList.class, any());
+        verify(entityManager, times(1)).getReference(eq(User.class), eq(1L));
+        verify(entityManager, times(1)).getReference(eq(Category.class), eq(2L));
+        verify(entityManager, times(1)).getReference(eq(Goal.class), eq(3L));
+        verify(entityManager, never()).getReference(eq(TaskList.class), any());
     }
 
     @Test
@@ -182,10 +182,10 @@ class TaskServiceTest {
         assertNull(result.getGoal());
         assertNull(result.getTaskList());
 
-        verify(entityManager, times(1)).getReference(User.class, 1L);
-        verify(entityManager, times(1)).getReference(Category.class, 2L);
-        verify(entityManager, never()).getReference(Goal.class, any());
-        verify(entityManager, never()).getReference(TaskList.class, any());
+        verify(entityManager, times(1)).getReference(eq(User.class), eq(1L));
+        verify(entityManager, times(1)).getReference(eq(Category.class), eq(2L));
+        verify(entityManager, never()).getReference(eq(Goal.class), any());
+        verify(entityManager, never()).getReference(eq(TaskList.class), any());
     }
 
     @Test
@@ -234,9 +234,24 @@ class TaskServiceTest {
         assertNull(result.getGoal());
         assertNull(result.getTaskList());
 
-        verify(entityManager, times(1)).getReference(User.class, 1L);
-        verify(entityManager, never()).getReference(Category.class, any());
-        verify(entityManager, never()).getReference(Goal.class, any());
-        verify(entityManager, never()).getReference(TaskList.class, any());
+        verify(entityManager, times(1)).getReference(eq(User.class), eq(1L));
+        verify(entityManager, never()).getReference(eq(Category.class), any());
+        verify(entityManager, never()).getReference(eq(Goal.class), any());
+        verify(entityManager, never()).getReference(eq(TaskList.class), any());
+    }
+
+    @Test
+    void updateTaskEntity_ShouldUpdateOnlyProvidedFields() {
+        Task task = new Task();
+        task.setId(1L);
+        task.setTitle("Old Title");
+
+        when(repository.getReferenceById(1L)).thenReturn(task);
+
+        TaskUpdateData updateData = new TaskUpdateData(1L, "New Title", null, null, null, null, null, null, null, null);
+
+        Task updated = taskService.updateTaskEntity(updateData);
+
+        assertEquals("New Title", updated.getTitle());
     }
 }

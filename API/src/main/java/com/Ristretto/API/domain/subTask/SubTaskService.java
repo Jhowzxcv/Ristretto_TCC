@@ -50,4 +50,8 @@ public class SubTaskService {
     public SubTask findByid(Long id) {
         return repository.getReferenceById(id);
     }
+
+    public boolean existsById(Long id) {
+        return repository.existsById(id);
+    }
 }

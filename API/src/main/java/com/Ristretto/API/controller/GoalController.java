@@ -1,6 +1,7 @@
 package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.goal.*;
+import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -173,6 +174,9 @@ public class GoalController {
             @Parameter(description = "ID da meta a ser deletada", required = true, example = "1")
             Long id
     ) {
+        if (!service.existsById(id)) {
+            throw new ResourceNotFoundException("Categoria não encontrada");
+        }
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }

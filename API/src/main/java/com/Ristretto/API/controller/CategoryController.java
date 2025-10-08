@@ -1,6 +1,7 @@
 package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.category.*;
+import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -164,6 +165,9 @@ public class CategoryController {
             @Parameter(description = "ID da categoria a ser deletada", required = true, example = "1")
             Long id
     ){
+        if (!service.existsById(id)) {
+            throw new ResourceNotFoundException("Categoria não encontrada");
+        }
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }

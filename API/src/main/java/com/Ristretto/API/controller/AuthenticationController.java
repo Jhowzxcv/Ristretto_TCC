@@ -30,7 +30,7 @@ public class AuthenticationController {
         var authenticationToken = new UsernamePasswordAuthenticationToken(data.email(), data.password());
         var authentication = manager.authenticate(authenticationToken);
 
-        var JWTtoken = tokenService.gerarToken((User) authentication.getPrincipal());
+        var JWTtoken = tokenService.generateToken((User) authentication.getPrincipal());
 
         return ResponseEntity.ok(new JWTTokenData(JWTtoken));
     }

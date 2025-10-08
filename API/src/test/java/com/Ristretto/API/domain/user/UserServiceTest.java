@@ -8,9 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -72,6 +70,18 @@ class UserServiceTest {
         assertEquals(expectedUser.getAvatarUrl(), result.getAvatarUrl());
 
         assertEquals(hashedPassword, result.getPassword());
+    }
+
+    @Test
+    void createUser_ShouldHashPassword() {
+        UserRegistrationData data = new UserRegistrationData("Name", "email@test.com", "plainPass", Theme.LIGHT, 15, null);
+
+        when(passwordEncoder.encode("plainPass")).thenReturn("hashedPass");
+
+        User user = userService.createUser(data);
+
+        assertNotEquals("plainPass", user.getPassword());
+        assertEquals("hashedPass", user.getPassword());
     }
 
     @Test

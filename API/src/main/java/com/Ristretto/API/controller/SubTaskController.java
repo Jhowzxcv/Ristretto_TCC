@@ -1,8 +1,7 @@
 package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.subTask.*;
-import com.Ristretto.API.domain.task.TaskDataDetails;
-import com.Ristretto.API.domain.task.TaskUpdateData;
+import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +23,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/subtask")
-@Tag(name = "subTask", description = "gerenciamento de subtarefas do usuario")
+@Tag(name = "SubTask", description = "gerenciamento de subtarefas do usuario")
 public class SubTaskController {
 
     @Autowired
@@ -31,70 +31,22 @@ public class SubTaskController {
 
     @PostMapping
     @Transactional
-    @Operation(
-            summary = "Criar nova subtarefa",
-            description = "Cria uma nova subtarefa no sistema"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "subtarefa criada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = SubTaskDataDetails.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Dados inválidos fornecidos",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Dados de entrada inválidos\" }")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
-    })
-    public ResponseEntity register(@RequestBody @Valid SubTaskRegistrationData data, UriComponentsBuilder uriBuilder) {
+    @Operation(summary = "Criar nova subtarefa", description = "Cria uma nova subtarefa no sistema")
+    public ResponseEntity<SubTaskDataDetails> register(
+            @RequestBody @Valid SubTaskRegistrationData data,
+            UriComponentsBuilder uriBuilder
+    ) {
         var subtask = service.convertToEntity(data);
         service.save(subtask);
         var uri = uriBuilder.path("/subtask/{id}").buildAndExpand(subtask.getId()).toUri();
-
         return ResponseEntity.created(uri).body(new SubTaskDataDetails(subtask));
     }
 
     @GetMapping
-    @Operation(
-            summary = "Listar subtarefas",
-            description = "Retorna uma lista paginada de subtarefas relacionadas a uma Tarefa"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Lista de subtarefas recuperada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = SubTaskDataDetails.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
-    })
+    @Operation(summary = "Listar subtarefas", description = "Retorna uma lista paginada de subtarefas relacionadas a uma Tarefa")
     public ResponseEntity<Page<SubTaskDataListing>> listing(
             @PageableDefault(sort = {"dueDate"}, direction = Sort.Direction.ASC) Pageable pageable,
-            @RequestParam Long taskId
+            @RequestParam @NotNull(message = "taskId é obrigatório") Long taskId
     ){
         var page = service.findByTaskId(pageable, taskId).map(SubTaskDataListing::new);
         return ResponseEntity.ok(page);
@@ -102,26 +54,7 @@ public class SubTaskController {
 
     @PutMapping
     @Transactional
-    @Operation(
-            summary = "Atualizar tarefa",
-            description = "Atualiza as informações de uma tarefa existente pelo ID"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Tarefa atualizada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }")
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Tarefa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }")
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
-    })
+    @Operation(summary = "Atualizar subtarefa", description = "Atualiza as informações de uma subtarefa existente pelo ID")
     public ResponseEntity<SubTaskDataDetails> update(
             @RequestBody @Valid SubTaskUpdateData data
     ) {
@@ -131,41 +64,15 @@ public class SubTaskController {
         return ResponseEntity.ok(new SubTaskDataDetails(subTask));
     }
 
-
-
     @DeleteMapping("/{id}")
     @Transactional
-    @Operation(
-            summary = "Deletar subtarefa",
-            description = "Remove uma subtarefa do sistema pelo ID"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "subtarefa deletada com sucesso"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "subtarefa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Subtarefa não encontrada\" }")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erro interno do servidor",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")
-                    )
-            )
-    })
+    @Operation(summary = "Deletar subtarefa", description = "Remove uma subtarefa do sistema pelo ID")
     public ResponseEntity<Void> delete(
-            @PathVariable
-            @Parameter(description = "ID da subtarefa a ser deletada", required = true, example = "1")
-            Long id
+            @PathVariable @NotNull(message = "ID é obrigatório") Long id
     ){
+        if (!service.existsById(id)) {
+            throw new ResourceNotFoundException("Subtarefa não encontrada");
+        }
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }

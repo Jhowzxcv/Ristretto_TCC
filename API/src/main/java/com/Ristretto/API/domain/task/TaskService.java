@@ -12,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.stream.Stream;
+
 @Service
 public class TaskService {
 
@@ -94,4 +96,13 @@ public class TaskService {
         Task updatedTask = updateTaskEntity(data);
         return save(updatedTask);
     }
+
+    public boolean existsById(Long id) {
+        return existsById(id);
+    }
+
+    public Page<Task> findAllByUserId(Long userId, Pageable pageable) {
+        return repository.findAllByUserId(userId, pageable);
+    }
+
 }

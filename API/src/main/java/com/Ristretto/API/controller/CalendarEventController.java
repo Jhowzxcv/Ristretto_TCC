@@ -3,6 +3,7 @@ package com.Ristretto.API.controller;
 import com.Ristretto.API.domain.calendarEvent.*;
 import com.Ristretto.API.domain.category.CategoryDataDetails;
 import com.Ristretto.API.domain.category.CategoryUpdateData;
+import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -103,16 +104,18 @@ public class CalendarEventController {
             )
     })
     public ResponseEntity<Page<CalendarEventDataListing>> listing(
-            @PageableDefault(size = 20, page = 0, sort = "id") // Pode especificar defaults
-            @Parameter(description = "Parâmetros de paginação (page, size, sort)")
-            Pageable pageable,
-
+            @PageableDefault(size = 20, page = 0, sort = "id") Pageable pageable,
             @RequestParam Long userId
-    ){
-        var page = service.findByUserId(pageable, userId).map(CalendarEventDataListing::new);
+    ) {
+        if (pageable.getPageNumber() < 0 || pageable.getPageSize() <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
 
+        var page = service.findByUserId(pageable, userId).map(CalendarEventDataListing::new);
         return ResponseEntity.ok(page);
     }
+
+
 
     @PutMapping
     @Transactional
@@ -139,6 +142,9 @@ public class CalendarEventController {
     public ResponseEntity<CalendarEventDataDetails> update(
             @RequestBody @Valid CalendarEventUpdateData data
     ) {
+        if (!service.existsById(data.id())) {
+            throw new ResourceNotFoundException("Evento não encontrado");
+        }
         var calendarEvent = service.findByid(data.id());
         calendarEvent.update(data);
         service.save(calendarEvent);
@@ -178,6 +184,9 @@ public class CalendarEventController {
             @Parameter(description = "ID do evento a ser deletado", required = true, example = "1")
             Long id
     ){
+        if (!service.existsById(id)) {
+            throw new ResourceNotFoundException("Categoria não encontrada");
+        }
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }

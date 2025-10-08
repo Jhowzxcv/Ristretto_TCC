@@ -3,10 +3,7 @@ package com.Ristretto.API.domain.category;
 import com.Ristretto.API.domain.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -14,6 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "categories")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
@@ -35,13 +33,12 @@ public class Category {
     @JoinColumn(name = "user_id")
     private User user;
 
-
     public Category(CategoryRegistrationData data, User user) {
         this.name = data.name();
         this.description = data.description();
         this.color = data.color();
-        this.icon = data.icon();
         this.user = user;
+        this.icon = (data.icon() != null && data.icon().isEmpty()) ? null : data.icon();
     }
 
     public void update(@Valid CategoryUpdateData data) {

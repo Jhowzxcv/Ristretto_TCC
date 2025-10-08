@@ -9,4 +9,6 @@ import java.util.Optional;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     Page<Task> findAll(Pageable pageable);
+
+    Page<Task> findAllByUserId(Long userId, Pageable pageable);
 }

@@ -2,7 +2,9 @@ package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.subTask.*;
 import com.Ristretto.API.domain.task.Task;
+import com.Ristretto.API.infra.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -10,12 +12,15 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,11 +49,26 @@ class SubTaskControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
         objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        PageableHandlerMethodArgumentResolver pageableResolver = new PageableHandlerMethodArgumentResolver();
+
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(pageableResolver)
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .build();
 
         mockTask = new Task();
         mockSubTask = new SubTask();
+        mockSubTask.setId(subTaskId);
+        mockSubTask.setTitle("Write Introduction");
+        mockSubTask.setDescription("Write the introduction chapter");
+        mockSubTask.setDueDate(LocalDateTime.now().plusDays(3));
+        mockSubTask.setIsDone(false);
+        mockSubTask.setTask(mockTask);
 
         registrationData = new SubTaskRegistrationData(
                 "Write Introduction",
@@ -66,6 +86,7 @@ class SubTaskControllerTest {
         );
     }
 
+    // ---------- TESTES DE REGISTRO ----------
     @Test
     void register_ShouldReturnCreatedSubTask_WhenValidDataProvided() throws Exception {
         when(service.convertToEntity(any(SubTaskRegistrationData.class))).thenReturn(mockSubTask);
@@ -77,25 +98,8 @@ class SubTaskControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"));
 
-        verify(service).convertToEntity(any());
-        verify(service).save(any());
-    }
-
-    @Test
-    void register_ShouldReturnBadRequest_WhenTitleIsEmpty() throws Exception {
-        SubTaskRegistrationData invalidData = new SubTaskRegistrationData(
-                "",
-                "Description",
-                LocalDateTime.now().plusDays(3),
-                taskId
-        );
-
-        mockMvc.perform(post("/subtask")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidData)))
-                .andExpect(status().isBadRequest());
-
-        verify(service, never()).convertToEntity(any());
+        verify(service, times(1)).convertToEntity(any());
+        verify(service, times(1)).save(any());
     }
 
     @Test
@@ -116,9 +120,64 @@ class SubTaskControllerTest {
     }
 
     @Test
+    void register_ShouldAcceptSubTask_WithoutDescriptionOrDueDate() throws Exception {
+        SubTaskRegistrationData minimalData = new SubTaskRegistrationData(
+                "Write Introduction",
+                null,
+                null,
+                taskId
+        );
+
+        when(service.convertToEntity(any(SubTaskRegistrationData.class))).thenReturn(mockSubTask);
+        when(service.save(any(SubTask.class))).thenReturn(mockSubTask);
+
+        mockMvc.perform(post("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(minimalData)))
+                .andExpect(status().isCreated());
+
+        verify(service, times(1)).convertToEntity(any());
+    }
+
+    @Test
+    void register_ShouldReturnBadRequest_WhenTitleIsEmpty() throws Exception {
+        SubTaskRegistrationData invalidData = new SubTaskRegistrationData(
+                "",
+                "Description",
+                LocalDateTime.now().plusDays(3),
+                taskId
+        );
+
+        mockMvc.perform(post("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidData)))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
+    @Test
+    void register_ShouldReturnBadRequest_WhenDueDateIsInPast() throws Exception {
+        SubTaskRegistrationData invalidData = new SubTaskRegistrationData(
+                "Title",
+                "Description",
+                LocalDateTime.now().minusDays(1),
+                taskId
+        );
+
+        mockMvc.perform(post("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidData)))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
+
+    // ---------- TESTES DE LISTAGEM ----------
+    @Test
     void listing_ShouldReturnPageOfSubTasks_WhenTaskIdProvided() throws Exception {
-        var subTasks = Arrays.asList(mockSubTask);
-        var page = new PageImpl<>(subTasks, PageRequest.of(0, 10), 1);
+        var page = new PageImpl<>(Arrays.asList(mockSubTask), PageRequest.of(0, 10), 1);
 
         when(service.findByTaskId(any(), eq(taskId))).thenReturn(page);
 
@@ -130,24 +189,18 @@ class SubTaskControllerTest {
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(service).findByTaskId(any(), eq(taskId));
+        verify(service, times(1)).findByTaskId(any(), eq(taskId));
     }
 
     @Test
-    void listing_ShouldReturnEmptyPage_WhenNoSubTasksFound() throws Exception {
-        var page = new PageImpl<SubTask>(Arrays.asList(), PageRequest.of(0, 10), 0);
+    void listing_ShouldReturnBadRequest_WhenTaskIdNotProvided() throws Exception {
+        mockMvc.perform(get("/subtask"))
+                .andExpect(status().isBadRequest());
 
-        when(service.findByTaskId(any(), eq(taskId))).thenReturn(page);
-
-        mockMvc.perform(get("/subtask")
-                        .param("taskId", taskId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isEmpty())
-                .andExpect(jsonPath("$.totalElements").value(0));
-
-        verify(service).findByTaskId(any(), eq(taskId));
+        verify(service, never()).findByTaskId(any(), any());
     }
 
+    // ---------- TESTES DE ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedSubTask_WhenValidDataProvided() throws Exception {
         when(service.findByid(subTaskId)).thenReturn(mockSubTask);
@@ -158,33 +211,15 @@ class SubTaskControllerTest {
                         .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isOk());
 
-        verify(service).findByid(subTaskId);
-        verify(service).save(any());
+        verify(service, times(1)).findByid(subTaskId);
+        verify(service, times(1)).save(any());
     }
 
     @Test
-    void update_ShouldReturnBadRequest_WhenIdIsNull() throws Exception {
-        SubTaskUpdateData invalidData = new SubTaskUpdateData(
-                null,
-                "Updated SubTask",
-                true,
-                "Description",
-                LocalDateTime.now().plusDays(5)
-        );
-
-        mockMvc.perform(put("/subtask")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidData)))
-                .andExpect(status().isBadRequest());
-
-        verify(service, never()).findByid(any());
-    }
-
-    @Test
-    void update_ShouldAllowPartialUpdate_WhenOnlySomeFieldsProvided() throws Exception {
+    void update_ShouldAllowPartialOrAllFieldsNull() throws Exception {
         SubTaskUpdateData partialData = new SubTaskUpdateData(
                 subTaskId,
-                "New Title",
+                null,
                 null,
                 null,
                 null
@@ -198,27 +233,87 @@ class SubTaskControllerTest {
                         .content(objectMapper.writeValueAsString(partialData)))
                 .andExpect(status().isOk());
 
-        verify(service).findByid(subTaskId);
-        verify(service).save(any());
+        verify(service, times(1)).findByid(subTaskId);
+        verify(service, times(1)).save(any());
     }
 
     @Test
+    void update_ShouldReturnBadRequest_WhenIdIsNullOrNegative() throws Exception {
+        SubTaskUpdateData invalidDataNull = new SubTaskUpdateData(null, "Title", true, "Desc", LocalDateTime.now());
+        SubTaskUpdateData invalidDataNegative = new SubTaskUpdateData(-1L, "Title", true, "Desc", LocalDateTime.now());
+
+        mockMvc.perform(put("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidDataNull)))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidDataNegative)))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findByid(any());
+    }
+
+    @Test
+    void update_ShouldReturnNotFound_WhenSubTaskNotFound() throws Exception {
+        when(service.findByid(subTaskId))
+                .thenThrow(new com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException("SubTask não encontrada"));
+
+        mockMvc.perform(put("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateData)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("\"Recurso não encontrado\""));
+
+        verify(service, times(1)).findByid(subTaskId);
+        verify(service, never()).save(any());
+    }
+
+
+    // ---------- TESTES DE DELETE ----------
+    @Test
     void delete_ShouldReturnNoContent_WhenSubTaskExists() throws Exception {
+        when(service.existsById(subTaskId)).thenReturn(true);
         doNothing().when(service).deleteById(subTaskId);
 
         mockMvc.perform(delete("/subtask/{id}", subTaskId))
                 .andExpect(status().isNoContent());
 
-        verify(service).deleteById(subTaskId);
+        verify(service, times(1)).existsById(subTaskId);
+        verify(service, times(1)).deleteById(subTaskId);
     }
 
     @Test
-    void delete_ShouldHandleException_WhenSubTaskNotFound() throws Exception {
-        doThrow(new RuntimeException("SubTask not found")).when(service).deleteById(subTaskId);
+    void delete_ShouldReturnNotFound_WhenSubTaskNotFound() throws Exception {
+        when(service.existsById(subTaskId)).thenReturn(false);
+
+        mockMvc.perform(delete("/subtask/{id}", subTaskId))
+                .andExpect(status().isNotFound());
+
+        verify(service, times(1)).existsById(subTaskId);
+        verify(service, never()).deleteById(subTaskId);
+    }
+
+    @Test
+    void delete_ShouldReturnInternalServerError_WhenServiceThrowsException() throws Exception {
+        when(service.existsById(subTaskId)).thenReturn(true);
+        doThrow(new RuntimeException("Database error")).when(service).deleteById(subTaskId);
 
         mockMvc.perform(delete("/subtask/{id}", subTaskId))
                 .andExpect(status().isInternalServerError());
 
-        verify(service).deleteById(subTaskId);
+        verify(service, times(1)).existsById(subTaskId);
+        verify(service, times(1)).deleteById(subTaskId);
     }
+
+    @Test
+    void delete_ShouldReturnBadRequest_WhenIdIsInvalidType() throws Exception {
+        mockMvc.perform(delete("/subtask/{id}", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Parâmetro")));
+
+        verify(service, never()).deleteById(any());
+    }
+
 }

@@ -24,7 +24,7 @@ public class TokenService {
 
     private static final String ISSUER = "API Ristretto";
 
-    public String gerarToken(User user) {
+    public String generateToken(User user) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.create()
@@ -33,7 +33,7 @@ public class TokenService {
                     .withIssuedAt(Instant.now())
                     .withExpiresAt(expirationDate())
                     .sign(algorithm);
-        } catch (JWTCreationException exception) {
+        } catch (JWTCreationException | IllegalArgumentException exception) {
             throw new TokenGenerationException("Failed to generate JWT token", exception);
         }
     }
