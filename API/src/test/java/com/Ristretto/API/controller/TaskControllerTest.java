@@ -6,6 +6,7 @@ import com.Ristretto.API.infra.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@DisplayName("Task Controller Tests (Completo Revisado)")
 class TaskControllerTest {
 
     private MockMvc mockMvc;
@@ -206,6 +208,18 @@ class TaskControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void register_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"title\":\"Task\",\"dueDate\":}";
+
+        mockMvc.perform(post("/task")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
     // ---------- LISTAGEM ----------
     @Test
     void listing_ShouldReturnPageOfTasks_WhenUserIdProvided() throws Exception {
@@ -246,6 +260,23 @@ class TaskControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(service, never()).findAll(any());
+    }
+
+    @Test
+    void listing_ShouldReturnBadRequest_WhenPaginationInvalid() throws Exception {
+        mockMvc.perform(get("/task")
+                        .param("userId", userId.toString())
+                        .param("page", "-1")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/task")
+                        .param("userId", userId.toString())
+                        .param("page", "0")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findAllByUserId(eq(userId), any());
     }
 
     // ---------- ATUALIZAÇÃO ----------
@@ -345,6 +376,43 @@ class TaskControllerTest {
         verifyNoInteractions(service);
     }
 
+    @Test
+    void update_ShouldReturnBadRequest_WhenBodyIsEmpty() throws Exception {
+        mockMvc.perform(put("/task")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findById(any());
+    }
+
+    @Test
+    void update_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"id\":1,\"title\":\"Update\",\"dueDate\":}";
+
+        mockMvc.perform(put("/task")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findById(any());
+    }
+
+    @Test
+    void update_ShouldReturnInternalServerError_WhenUnexpectedException() throws Exception {
+        when(service.existsById(taskId)).thenReturn(true);
+        when(service.findById(taskId)).thenThrow(new RuntimeException("Unexpected error"));
+
+        mockMvc.perform(put("/task")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateData)))
+                .andExpect(status().isInternalServerError());
+
+        verify(service, times(1)).existsById(taskId);
+        verify(service, times(1)).findById(taskId);
+        verify(service, never()).save(any());
+    }
+
     // ---------- DELETE ----------
     @Test
     void delete_ShouldReturnNoContent_WhenTaskExists() throws Exception {
@@ -377,5 +445,17 @@ class TaskControllerTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Parâmetro")));
 
         verify(service, never()).deleteById(any());
+    }
+
+    @Test
+    void delete_ShouldReturnInternalServerError_WhenServiceThrowsException() throws Exception {
+        when(service.existsById(taskId)).thenReturn(true);
+        doThrow(new RuntimeException("Database error")).when(service).deleteById(taskId);
+
+        mockMvc.perform(delete("/task/{id}", taskId))
+                .andExpect(status().isInternalServerError());
+
+        verify(service, times(1)).existsById(taskId);
+        verify(service, times(1)).deleteById(taskId);
     }
 }

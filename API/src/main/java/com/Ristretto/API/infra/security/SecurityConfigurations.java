@@ -1,5 +1,6 @@
 package com.Ristretto.API.infra.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,9 +30,17 @@ public class SecurityConfigurations {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/login", "/user").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/login", "/user").permitAll() // só POST liberado
                         .requestMatchers("/swagger-ui.html", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, authEx) ->
+                                res.sendError(HttpServletResponse.SC_UNAUTHORIZED)) // 401
+                        .accessDeniedHandler((req, res, accessEx) ->
+                                res.sendError(HttpServletResponse.SC_FORBIDDEN)) // 403
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

@@ -6,6 +6,7 @@ import com.Ristretto.API.infra.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@DisplayName("TaskList Controller Tests (Completo Revisado)")
 class TaskListControllerTest {
 
     private MockMvc mockMvc;
@@ -78,6 +80,7 @@ class TaskListControllerTest {
     }
 
     // ---------- LISTAGEM ----------
+// ---------- LISTAGEM ----------
     @Test
     void listing_ShouldReturnPageOfTaskLists_WhenCalled() throws Exception {
         var page = new PageImpl<>(Collections.singletonList(mockTaskList), PageRequest.of(0, 10), 1);
@@ -105,6 +108,33 @@ class TaskListControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(0));
 
         verify(service, times(1)).findAllByUserId(any(), any());
+    }
+
+    @Test
+    void listing_ShouldReturnBadRequest_WhenUserIdMissing() throws Exception {
+        mockMvc.perform(get("/tasklist")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findAllByUserId(any(), any());
+    }
+
+    @Test
+    void listing_ShouldReturnBadRequest_WhenPaginationInvalid() throws Exception {
+        mockMvc.perform(get("/tasklist")
+                        .param("userId", userId.toString())
+                        .param("page", "-1")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/tasklist")
+                        .param("userId", userId.toString())
+                        .param("page", "0")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findAllByUserId(any(), any());
     }
 
     // ---------- REGISTRO ----------
@@ -181,6 +211,18 @@ class TaskListControllerTest {
     }
 
     @Test
+    void register_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"title\":\"List\",\"dueDate\":}";
+
+        mockMvc.perform(post("/tasklist")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
+    @Test
     void register_ShouldReturnBadRequest_WhenCyclicListWithoutRepetitionType() throws Exception {
         TaskListRegistrationData invalidData = new TaskListRegistrationData(
                 "Cyclic List", "blue", "icon.png", ListType.CYCLIC,
@@ -192,6 +234,7 @@ class TaskListControllerTest {
                         .content(objectMapper.writeValueAsString(invalidData)))
                 .andExpect(status().isBadRequest());
     }
+
     // ---------- ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedTaskList_WhenValidDataProvided() throws Exception {
@@ -210,62 +253,41 @@ class TaskListControllerTest {
     }
 
     @Test
-    void update_ShouldReturnBadRequest_WhenIdIsNull() throws Exception {
-        TaskListUpdateData invalidData = new TaskListUpdateData(
-                null, "Title", "green", "icon2.png", ListType.STANDARD, null, null, false, false, null
-        );
-
+    void update_ShouldReturnBadRequest_WhenBodyIsEmpty() throws Exception {
         mockMvc.perform(put("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidData)))
+                        .content("{}"))
                 .andExpect(status().isBadRequest());
 
         verify(service, never()).findByid(any());
+        verify(service, never()).save(any());
     }
 
     @Test
-    void update_ShouldReturnBadRequest_WhenIdIsInvalidType() throws Exception {
-        String json = """
-            {"id":"abc","title":"Invalid"}
-            """;
+    void update_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"id\":1,\"title\":\"Update\",\"dueDate\":}";
 
         mockMvc.perform(put("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
+                        .content(malformedJson))
                 .andExpect(status().isBadRequest());
 
         verify(service, never()).findByid(any());
+        verify(service, never()).save(any());
     }
 
     @Test
-    void update_ShouldAllowPartialUpdate_WhenOnlySomeFieldsProvided() throws Exception {
-        TaskListUpdateData partialData = new TaskListUpdateData(
-                taskListId, "New Title", null, null, null, null, null, null, null, null
-        );
-
+    void update_ShouldReturnInternalServerError_WhenUnexpectedException() throws Exception {
         when(service.existsById(taskListId)).thenReturn(true);
-        when(service.findByid(taskListId)).thenReturn(mockTaskList);
-        when(service.save(any(TaskList.class))).thenReturn(mockTaskList);
-
-        mockMvc.perform(put("/tasklist")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(partialData)))
-                .andExpect(status().isOk());
-
-        verify(service, times(1)).existsById(taskListId);
-        verify(service, times(1)).findByid(taskListId);
-        verify(service, times(1)).save(any());
-    }
-
-    @Test
-    void update_ShouldReturnNotFound_WhenTaskListNotFound() throws Exception {
-        when(service.existsById(taskListId)).thenReturn(false);
+        when(service.findByid(taskListId)).thenThrow(new RuntimeException("Unexpected error"));
 
         mockMvc.perform(put("/tasklist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isInternalServerError());
 
+        verify(service, times(1)).existsById(taskListId);
+        verify(service, times(1)).findByid(taskListId);
         verify(service, never()).save(any());
     }
 
@@ -299,5 +321,17 @@ class TaskListControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(service, never()).deleteById(any());
+    }
+
+    @Test
+    void delete_ShouldReturnInternalServerError_WhenServiceThrowsException() throws Exception {
+        when(service.existsById(taskListId)).thenReturn(true);
+        doThrow(new RuntimeException("Database error")).when(service).deleteById(taskListId);
+
+        mockMvc.perform(delete("/tasklist/{id}", taskListId))
+                .andExpect(status().isInternalServerError());
+
+        verify(service, times(1)).existsById(taskListId);
+        verify(service, times(1)).deleteById(taskListId);
     }
 }

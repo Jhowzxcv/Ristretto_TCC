@@ -13,7 +13,9 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -67,14 +69,17 @@ public class CalendarEventController {
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<Page<CalendarEventDataListing>> listing(
-            @PageableDefault(size = 20, page = 0, sort = "id") Pageable pageable,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @RequestParam Long userId
     ) {
-        if (pageable.getPageNumber() < 0 || pageable.getPageSize() <= 0) {
+        if (page < 0 || size <= 0) {
             return ResponseEntity.badRequest().build();
         }
-        var page = service.findByUserId(pageable, userId).map(CalendarEventDataListing::new);
-        return ResponseEntity.ok(page);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id"));
+        var result = service.findByUserId(pageable, userId).map(CalendarEventDataListing::new);
+        return ResponseEntity.ok(result);
     }
 
     @PutMapping

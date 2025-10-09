@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 public record AuthenticationData(
         @NotBlank(message = "{email.required}")
         @Email(message = "{email.invalid}")
-
         String email,
 
         @NotBlank(message = "{password.required}")

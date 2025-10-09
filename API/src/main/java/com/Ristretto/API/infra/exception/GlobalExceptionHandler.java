@@ -6,11 +6,11 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ValidationException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -28,13 +28,8 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // -------------------- 404 --------------------
-    @ExceptionHandler({EntityNotFoundException.class, ResourceNotFoundException.class})
+    @ExceptionHandler({EntityNotFoundException.class, ResourceNotFoundException.class, EmptyResultDataAccessException.class})
     public ResponseEntity<?> handleNotFound(Exception ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Recurso não encontrado");
-    }
-
-    @ExceptionHandler(EmptyResultDataAccessException.class)
-    public ResponseEntity<?> handleEmptyResult(EmptyResultDataAccessException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Recurso não encontrado");
     }
 
@@ -77,15 +72,22 @@ public class GlobalExceptionHandler {
     }
 
     // -------------------- 401 --------------------
-    @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class, TokenException.class})
-    public ResponseEntity<?> handleUnauthorized(Exception ex) {
-        String message = switch (ex.getClass().getSimpleName()) {
-            case "BadCredentialsException" -> "Credenciais inválidas";
-            case "AuthenticationException" -> "Falha na autenticação";
-            case "TokenException" -> ex.getMessage();
-            default -> "Não autorizado";
-        };
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(message);
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<?> handleBadCredentials(BadCredentialsException ex) {
+        log.warn("Tentativa de login com credenciais inválidas");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciais inválidas");
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<?> handleAuthentication(AuthenticationException ex) {
+        log.warn("Falha de autenticação: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Falha na autenticação");
+    }
+
+    @ExceptionHandler(TokenException.class)
+    public ResponseEntity<?> handleToken(TokenException ex) {
+        log.warn("Erro de token: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
     }
 
     // -------------------- 403 --------------------
@@ -99,7 +101,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleInternalErrors(Exception ex) {
         log.error("Erro interno não tratado", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Erro interno: " + ex.getLocalizedMessage());
+                .body("Erro interno no servidor");
     }
 
     // -------------------- Aux --------------------

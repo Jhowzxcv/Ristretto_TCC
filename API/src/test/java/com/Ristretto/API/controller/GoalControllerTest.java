@@ -6,6 +6,7 @@ import com.Ristretto.API.infra.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@DisplayName("Goal Controller Tests (Completo Revisado)")
 class GoalControllerTest {
 
     private MockMvc mockMvc;
@@ -86,7 +88,7 @@ class GoalControllerTest {
         );
     }
 
-    // ---------- TESTES DE REGISTRO ----------
+    // ---------- REGISTRO ----------
     @Test
     void register_ShouldReturnCreatedGoal_WhenValidDataProvided() throws Exception {
         when(service.convertToEntity(any(GoalRegistrationData.class))).thenReturn(mockGoal);
@@ -210,7 +212,29 @@ class GoalControllerTest {
         verify(service, never()).save(any());
     }
 
-    // ---------- TESTES DE LISTAGEM ----------
+    @Test
+    void register_ShouldReturnBadRequest_WhenBodyIsEmpty() throws Exception {
+        mockMvc.perform(post("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
+    @Test
+    void register_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"title\":\"Goal\",\"dueDate\":}";
+
+        mockMvc.perform(post("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
+    // ---------- LISTAGEM ----------
     @Test
     void listing_ShouldReturnPageOfGoals_WhenUserIdProvided() throws Exception {
         var page = new PageImpl<>(Arrays.asList(mockGoal), PageRequest.of(0, 10), 1);
@@ -259,7 +283,24 @@ class GoalControllerTest {
         verify(service, times(1)).findByUserId(any(), eq(userId));
     }
 
-    // ---------- TESTES DE ATUALIZAÇÃO ----------
+    @Test
+    void listing_ShouldReturnBadRequest_WhenPaginationInvalid() throws Exception {
+        mockMvc.perform(get("/goal")
+                        .param("userId", userId.toString())
+                        .param("page", "-1")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/goal")
+                        .param("userId", userId.toString())
+                        .param("page", "0")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findByUserId(any(), any());
+    }
+
+    // ---------- ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedGoal_WhenValidDataProvided() throws Exception {
         when(service.findById(goalId)).thenReturn(mockGoal);
@@ -314,6 +355,28 @@ class GoalControllerTest {
     }
 
     @Test
+    void update_ShouldReturnBadRequest_WhenBodyIsEmpty() throws Exception {
+        mockMvc.perform(put("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findById(any());
+    }
+
+    @Test
+    void update_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"id\":1,\"title\":\"Update\",\"dueDate\":}";
+
+        mockMvc.perform(put("/goal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findById(any());
+    }
+
+    @Test
     void update_ShouldReturnInternalServerError_WhenGoalNotFound() throws Exception {
         when(service.findById(goalId)).thenThrow(new RuntimeException("Goal not found"));
 
@@ -341,7 +404,7 @@ class GoalControllerTest {
         verify(service, never()).save(any());
     }
 
-    // ---------- TESTES DE DELETE ----------
+    // ---------- DELETE ----------
     @Test
     void delete_ShouldReturnNoContent_WhenGoalExists() throws Exception {
         when(service.existsById(goalId)).thenReturn(true);
@@ -372,5 +435,17 @@ class GoalControllerTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Parâmetro")));
 
         verify(service, never()).deleteById(any());
+    }
+
+    @Test
+    void delete_ShouldReturnInternalServerError_WhenServiceThrowsException() throws Exception {
+        when(service.existsById(goalId)).thenReturn(true);
+        doThrow(new RuntimeException("Database error")).when(service).deleteById(goalId);
+
+        mockMvc.perform(delete("/goal/{id}", goalId))
+                .andExpect(status().isInternalServerError());
+
+        verify(service, times(1)).existsById(goalId);
+        verify(service, times(1)).deleteById(goalId);
     }
 }

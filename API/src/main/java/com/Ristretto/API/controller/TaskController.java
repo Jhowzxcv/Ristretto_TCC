@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -56,18 +57,31 @@ public class TaskController {
             @ApiResponse(responseCode = "200", description = "Lista de tarefas recuperada com sucesso",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = TaskDataListing.class))),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de paginação inválidos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Parâmetros inválidos\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<Page<TaskDataListing>> listing(
-            @PageableDefault(sort = {"dueDate"}, direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam(defaultValue = "0")
+            @Parameter(description = "Número da página (>= 0)", example = "0")
+            int page,
+            @RequestParam(defaultValue = "20")
+            @Parameter(description = "Tamanho da página (> 0)", example = "20")
+            int size,
             @RequestParam
             @Parameter(description = "ID do usuário para filtrar tarefas", required = true, example = "1")
             Long userId
     ) {
-        var page = service.findAllByUserId(userId, pageable).map(TaskDataListing::new);
-        return ResponseEntity.ok(page);
+        if (page < 0 || size <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("dueDate").ascending());
+        var result = service.findAllByUserId(userId, pageable).map(TaskDataListing::new);
+        return ResponseEntity.ok(result);
     }
 
     @PutMapping

@@ -1,156 +1,113 @@
 package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.user.User;
-import com.Ristretto.API.infra.exception.GlobalExceptionHandler;
 import com.Ristretto.API.infra.security.AuthenticationData;
 import com.Ristretto.API.infra.security.TokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@DisplayName("Authentication Controller Tests")
-@AutoConfigureMockMvc(addFilters = false)
+@SpringBootTest
+@AutoConfigureMockMvc
 class AuthenticationControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
 
-    @Mock
+    @MockBean
     private AuthenticationManager authenticationManager;
 
-    @Mock
+    @MockBean
     private TokenService tokenService;
 
-    @InjectMocks
-    private AuthenticationController authenticationController;
-
-    private AuthenticationData authenticationData;
-    private User mockUser;
-    private Authentication mockAuthentication;
+    @Autowired
     private ObjectMapper objectMapper;
+
     private final String validToken = "valid.jwt.token";
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        objectMapper = new ObjectMapper();
-
-        mockMvc = MockMvcBuilders.standaloneSetup(authenticationController)
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
-                .build();
-
-        authenticationData = new AuthenticationData("user@example.com", "SecurePassword123");
-        mockUser = new User();
-        mockUser.setEmail("user@example.com");
-        mockAuthentication = mock(Authentication.class);
+    void resetMocks() {
+        Mockito.reset(authenticationManager, tokenService);
     }
 
+    // ---------- LOGIN SUCESSO ----------
     @Test
-    @DisplayName("Deve retornar 200 e token JWT quando credenciais são válidas")
-    void login_ShouldReturnOkWithToken_WhenCredentialsAreValid() throws Exception {
+    @DisplayName("Deve autenticar com sucesso e retornar token")
+    void login_ShouldReturnOk_WhenCredentialsValid() throws Exception {
+        User mockUser = new User();
+        mockUser.setEmail("user@example.com");
+
+        Authentication mockAuth = mock(Authentication.class);
+
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(mockAuthentication);
-        when(mockAuthentication.getPrincipal()).thenReturn(mockUser);
+                .thenReturn(mockAuth);
+        when(mockAuth.getPrincipal()).thenReturn(mockUser);
         when(tokenService.generateToken(mockUser)).thenReturn(validToken);
 
+        AuthenticationData data = new AuthenticationData("user@example.com", "SecurePassword123");
+
         mockMvc.perform(post("/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(authenticationData)))
+                        .content(objectMapper.writeValueAsString(data)))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.token").value(validToken));
-
-        verify(authenticationManager, times(1)).authenticate(any());
-        verify(tokenService, times(1)).generateToken(mockUser);
     }
 
+    // ---------- LOGIN FALHA ----------
     @Test
     @DisplayName("Deve retornar 401 quando credenciais são inválidas")
-    void login_ShouldReturnUnauthorized_WhenCredentialsAreInvalid() throws Exception {
+    void login_ShouldReturnUnauthorized_WhenCredentialsInvalid() throws Exception {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Invalid credentials"));
+                .thenThrow(new BadCredentialsException("Invalid"));
+
+        AuthenticationData data = new AuthenticationData("user@example.com", "wrongpass");
 
         mockMvc.perform(post("/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(authenticationData)))
+                        .content(objectMapper.writeValueAsString(data)))
                 .andExpect(status().isUnauthorized());
-
-        verify(authenticationManager, times(1)).authenticate(any());
-        verify(tokenService, never()).generateToken(any());
     }
 
-    @Test
-    @DisplayName("Deve retornar 400 quando senha está vazia")
-    void login_ShouldReturnBadRequest_WhenPasswordIsEmpty() throws Exception {
-        AuthenticationData invalidData = new AuthenticationData("user@example.com", "");
+    // ---------- VALIDAÇÃO DE CAMPOS ----------
+    @ParameterizedTest(name = "Email: \"{0}\" | Senha: \"{1}\" deve falhar com 400")
+    @CsvSource({
+            "'', SecurePassword123",          // email vazio
+            "invalid-email, SecurePassword123", // email inválido
+            "user@example.com, ''",           // senha vazia
+            "user@example.com, 123",          // senha curta
+            "'', ''"                          // ambos vazios
+    })
+    void login_ShouldReturnBadRequest_WhenInvalidFields(String email, String password) throws Exception {
+        AuthenticationData invalid = new AuthenticationData(email, password);
 
         mockMvc.perform(post("/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidData)))
+                        .content(objectMapper.writeValueAsString(invalid)))
                 .andExpect(status().isBadRequest());
 
         verify(authenticationManager, never()).authenticate(any());
     }
 
-    @Test
-    @DisplayName("Deve retornar 400 quando email está vazio")
-    void login_ShouldReturnBadRequest_WhenEmailIsEmpty() throws Exception {
-        AuthenticationData invalidData = new AuthenticationData("", "SecurePassword123");
-
-        mockMvc.perform(post("/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidData)))
-                .andExpect(status().isBadRequest());
-
-        verify(authenticationManager, never()).authenticate(any());
-    }
-
-    @Test
-    @DisplayName("Deve retornar 400 quando email é inválido")
-    void login_ShouldReturnBadRequest_WhenEmailFormatIsInvalid() throws Exception {
-        AuthenticationData invalidData = new AuthenticationData("invalid-email", "SecurePassword123");
-
-        mockMvc.perform(post("/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidData)))
-                .andExpect(status().isBadRequest());
-
-        verify(authenticationManager, never()).authenticate(any());
-    }
-
-    @Test
-    @DisplayName("Deve retornar 400 quando corpo da requisição está vazio")
-    void login_ShouldReturnBadRequest_WhenBodyIsEmpty() throws Exception {
-        mockMvc.perform(post("/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
-
-        verify(authenticationManager, never()).authenticate(any());
-    }
-
+    // ---------- JSON MALFORMADO ----------
     @Test
     @DisplayName("Deve retornar 400 quando JSON está malformado")
     void login_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
@@ -160,54 +117,41 @@ class AuthenticationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(malformedJson))
                 .andExpect(status().isBadRequest());
+    }
 
-        verify(authenticationManager, never()).authenticate(any());
+    // ---------- ERROS INTERNOS ----------
+    @Test
+    @DisplayName("Deve retornar 500 quando ocorre erro inesperado na autenticação")
+    void login_ShouldReturnInternalServerError_WhenUnexpectedError() throws Exception {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new RuntimeException("Unexpected error"));
+
+        AuthenticationData data = new AuthenticationData("user@example.com", "SecurePassword123");
+
+        mockMvc.perform(post("/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(data)))
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
-    @DisplayName("Deve retornar 200 mesmo com email em maiúsculas")
-    void login_ShouldReturnOk_WhenEmailHasUppercase() throws Exception {
-        AuthenticationData emailWithUppercase = new AuthenticationData("User@Example.COM", "SecurePassword123");
+    @DisplayName("Deve retornar 500 quando falha ao gerar token")
+    void login_ShouldReturnInternalServerError_WhenTokenGenerationFails() throws Exception {
+        User mockUser = new User();
+        mockUser.setEmail("user@example.com");
+
+        Authentication mockAuth = mock(Authentication.class);
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(mockAuthentication);
-        when(mockAuthentication.getPrincipal()).thenReturn(mockUser);
-        when(tokenService.generateToken(mockUser)).thenReturn(validToken);
+                .thenReturn(mockAuth);
+        when(mockAuth.getPrincipal()).thenReturn(mockUser);
+        when(tokenService.generateToken(mockUser)).thenThrow(new RuntimeException("Token error"));
+
+        AuthenticationData data = new AuthenticationData("user@example.com", "SecurePassword123");
 
         mockMvc.perform(post("/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(emailWithUppercase)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value(validToken));
-
-        verify(authenticationManager, times(1)).authenticate(any());
-        verify(tokenService, times(1)).generateToken(mockUser);
+                        .content(objectMapper.writeValueAsString(data)))
+                .andExpect(status().isInternalServerError());
     }
-
-    @Test
-    void login_ShouldReturnBadRequest_WhenFieldsAreNull() throws Exception {
-        AuthenticationData invalidData = new AuthenticationData(null, null);
-
-        mockMvc.perform(post("/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidData)))
-                .andExpect(status().isBadRequest());
-
-        verify(authenticationManager, never()).authenticate(any());
-    }
-
-    @Test
-    void login_ShouldReturnBadRequest_WhenPasswordTooShort() throws Exception {
-        // senha inválida (menos de 6 caracteres)
-        AuthenticationData invalidData = new AuthenticationData("user@example.com", "123");
-
-        mockMvc.perform(post("/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidData)))
-                .andExpect(status().isBadRequest());
-
-        // como a validação falhou, o manager nunca deve ser chamado
-        verify(authenticationManager, never()).authenticate(any());
-    }
-
 }

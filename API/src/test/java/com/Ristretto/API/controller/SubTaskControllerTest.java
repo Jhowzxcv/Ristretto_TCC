@@ -6,6 +6,7 @@ import com.Ristretto.API.infra.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@DisplayName("SubTask Controller Tests (Completo Revisado)")
 class SubTaskControllerTest {
 
     private MockMvc mockMvc;
@@ -85,7 +87,7 @@ class SubTaskControllerTest {
         );
     }
 
-    // ---------- TESTES DE REGISTRO ----------
+    // ---------- REGISTRO ----------
     @Test
     void register_ShouldReturnCreatedSubTask_WhenValidDataProvided() throws Exception {
         when(service.convertToEntity(any(SubTaskRegistrationData.class))).thenReturn(mockSubTask);
@@ -104,10 +106,7 @@ class SubTaskControllerTest {
     @Test
     void register_ShouldReturnBadRequest_WhenTaskIdIsNull() throws Exception {
         SubTaskRegistrationData invalidData = new SubTaskRegistrationData(
-                "Write Introduction",
-                "Description",
-                LocalDateTime.now().plusDays(3),
-                null
+                "Write Introduction", "Description", LocalDateTime.now().plusDays(3), null
         );
 
         mockMvc.perform(post("/subtask")
@@ -121,10 +120,7 @@ class SubTaskControllerTest {
     @Test
     void register_ShouldAcceptSubTask_WithoutDescriptionOrDueDate() throws Exception {
         SubTaskRegistrationData minimalData = new SubTaskRegistrationData(
-                "Write Introduction",
-                null,
-                null,
-                taskId
+                "Write Introduction", null, null, taskId
         );
 
         when(service.convertToEntity(any(SubTaskRegistrationData.class))).thenReturn(mockSubTask);
@@ -141,10 +137,7 @@ class SubTaskControllerTest {
     @Test
     void register_ShouldReturnBadRequest_WhenTitleIsEmpty() throws Exception {
         SubTaskRegistrationData invalidData = new SubTaskRegistrationData(
-                "",
-                "Description",
-                LocalDateTime.now().plusDays(3),
-                taskId
+                "", "Description", LocalDateTime.now().plusDays(3), taskId
         );
 
         mockMvc.perform(post("/subtask")
@@ -158,10 +151,7 @@ class SubTaskControllerTest {
     @Test
     void register_ShouldReturnBadRequest_WhenDueDateIsInPast() throws Exception {
         SubTaskRegistrationData invalidData = new SubTaskRegistrationData(
-                "Title",
-                "Description",
-                LocalDateTime.now().minusDays(1),
-                taskId
+                "Title", "Description", LocalDateTime.now().minusDays(1), taskId
         );
 
         mockMvc.perform(post("/subtask")
@@ -172,8 +162,29 @@ class SubTaskControllerTest {
         verify(service, never()).convertToEntity(any());
     }
 
+    @Test
+    void register_ShouldReturnBadRequest_WhenBodyIsEmpty() throws Exception {
+        mockMvc.perform(post("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
 
-    // ---------- TESTES DE LISTAGEM ----------
+        verify(service, never()).convertToEntity(any());
+    }
+
+    @Test
+    void register_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"title\":\"Intro\",\"dueDate\":}";
+
+        mockMvc.perform(post("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).convertToEntity(any());
+    }
+
+    // ---------- LISTAGEM ----------
     @Test
     void listing_ShouldReturnPageOfSubTasks_WhenTaskIdProvided() throws Exception {
         var page = new PageImpl<>(Arrays.asList(mockSubTask), PageRequest.of(0, 10), 1);
@@ -192,6 +203,21 @@ class SubTaskControllerTest {
     }
 
     @Test
+    void listing_ShouldReturnEmptyPage_WhenNoSubTasksFound() throws Exception {
+        var page = new PageImpl<SubTask>(Arrays.asList(), PageRequest.of(0, 10), 0);
+
+        when(service.findByTaskId(any(), eq(taskId))).thenReturn(page);
+
+        mockMvc.perform(get("/subtask")
+                        .param("taskId", taskId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.totalElements").value(0));
+
+        verify(service, times(1)).findByTaskId(any(), eq(taskId));
+    }
+
+    @Test
     void listing_ShouldReturnBadRequest_WhenTaskIdNotProvided() throws Exception {
         mockMvc.perform(get("/subtask"))
                 .andExpect(status().isBadRequest());
@@ -199,7 +225,24 @@ class SubTaskControllerTest {
         verify(service, never()).findByTaskId(any(), any());
     }
 
-    // ---------- TESTES DE ATUALIZAÇÃO ----------
+    @Test
+    void listing_ShouldReturnBadRequest_WhenPaginationInvalid() throws Exception {
+        mockMvc.perform(get("/subtask")
+                        .param("taskId", taskId.toString())
+                        .param("page", "-1")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/subtask")
+                        .param("taskId", taskId.toString())
+                        .param("page", "0")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findByTaskId(any(), any());
+    }
+
+    // ---------- ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedSubTask_WhenValidDataProvided() throws Exception {
         when(service.findById(subTaskId)).thenReturn(mockSubTask);
@@ -255,6 +298,28 @@ class SubTaskControllerTest {
     }
 
     @Test
+    void update_ShouldReturnBadRequest_WhenBodyIsEmpty() throws Exception {
+        mockMvc.perform(put("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findById(any());
+    }
+
+    @Test
+    void update_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"id\":1,\"title\":\"Update\",\"dueDate\":}";
+
+        mockMvc.perform(put("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findById(any());
+    }
+
+    @Test
     void update_ShouldReturnNotFound_WhenSubTaskNotFound() throws Exception {
         when(service.findById(subTaskId))
                 .thenThrow(new com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException("SubTask não encontrada"));
@@ -269,8 +334,20 @@ class SubTaskControllerTest {
         verify(service, never()).save(any());
     }
 
+    @Test
+    void update_ShouldReturnInternalServerError_WhenServiceThrowsUnexpectedException() throws Exception {
+        when(service.findById(subTaskId)).thenThrow(new RuntimeException("Unexpected error"));
 
-    // ---------- TESTES DE DELETE ----------
+        mockMvc.perform(put("/subtask")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateData)))
+                .andExpect(status().isInternalServerError());
+
+        verify(service, times(1)).findById(subTaskId);
+        verify(service, never()).save(any());
+    }
+
+    // ---------- DELETE ----------
     @Test
     void delete_ShouldReturnNoContent_WhenSubTaskExists() throws Exception {
         when(service.existsById(subTaskId)).thenReturn(true);
@@ -314,5 +391,4 @@ class SubTaskControllerTest {
 
         verify(service, never()).deleteById(any());
     }
-
 }

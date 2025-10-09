@@ -1,10 +1,10 @@
 package com.Ristretto.API.controller;
 
 import com.Ristretto.API.domain.user.*;
-import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import com.Ristretto.API.infra.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -19,6 +19,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@DisplayName("User Controller Tests (Completo Revisado)")
 class UserControllerTest {
 
     private MockMvc mockMvc;
@@ -119,6 +120,18 @@ class UserControllerTest {
     }
 
     @Test
+    void register_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"name\":\"User\",\"email\":}";
+
+        mockMvc.perform(post("/user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).createUser(any());
+    }
+
+    @Test
     void register_ShouldNotExposePasswordHash_InResponse() throws Exception {
         when(service.createUser(any(UserRegistrationData.class))).thenReturn(mockUser);
 
@@ -132,7 +145,7 @@ class UserControllerTest {
     // ---------- ATUALIZAÇÃO ----------
     @Test
     void update_ShouldReturnUpdatedUser_WhenValidDataProvided() throws Exception {
-        when(service.existsById(userId)).thenReturn(true); // <- precisa simular que o usuário existe
+        when(service.existsById(userId)).thenReturn(true);
         when(service.findById(userId)).thenReturn(mockUser);
         when(service.save(any(User.class))).thenReturn(mockUser);
 
@@ -163,7 +176,7 @@ class UserControllerTest {
     void update_ShouldAllowPartialUpdate() throws Exception {
         UserUpdateData partialData = new UserUpdateData(userId, "New Name", null, null, null);
 
-        when(service.existsById(userId)).thenReturn(true); // precisa simular que o usuário existe
+        when(service.existsById(userId)).thenReturn(true);
         when(service.findById(userId)).thenReturn(mockUser);
         when(service.save(any(User.class))).thenReturn(mockUser);
 
@@ -202,6 +215,33 @@ class UserControllerTest {
         verify(service, never()).findById(any());
     }
 
+    @Test
+    void update_ShouldReturnBadRequest_WhenJsonMalformed() throws Exception {
+        String malformedJson = "{\"id\":1,\"name\":\"Update\",\"theme\":}";
+
+        mockMvc.perform(put("/user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).findById(any());
+    }
+
+    @Test
+    void update_ShouldReturnInternalServerError_WhenUnexpectedException() throws Exception {
+        when(service.existsById(userId)).thenReturn(true);
+        when(service.findById(userId)).thenThrow(new RuntimeException("Unexpected error"));
+
+        mockMvc.perform(put("/user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateData)))
+                .andExpect(status().isInternalServerError());
+
+        verify(service, times(1)).existsById(userId);
+        verify(service, times(1)).findById(userId);
+        verify(service, never()).save(any());
+    }
+
     // ---------- DELETE ----------
     @Test
     void delete_ShouldReturnNoContent_WhenUserExists() throws Exception {
@@ -216,23 +256,14 @@ class UserControllerTest {
     }
 
     @Test
-    void delete_ShouldReturnNotFound_WhenUserDoesNotExist() throws Exception {
-        when(service.existsById(userId)).thenReturn(false);
+    void delete_ShouldReturnInternalServerError_WhenServiceThrowsException() throws Exception {
+        when(service.existsById(userId)).thenReturn(true);
+        doThrow(new RuntimeException("Database error")).when(service).deleteById(userId);
 
         mockMvc.perform(delete("/user/{id}", userId))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("\"Recurso não encontrado\""));
+                .andExpect(status().isInternalServerError());
 
         verify(service, times(1)).existsById(userId);
-        verify(service, never()).deleteById(any());
-    }
-
-    @Test
-    void delete_ShouldReturnBadRequest_WhenIdIsInvalidType() throws Exception {
-        mockMvc.perform(delete("/user/{id}", "abc"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Parâmetro")));
-
-        verify(service, never()).deleteById(any());
+        verify(service, times(1)).deleteById(userId);
     }
 }

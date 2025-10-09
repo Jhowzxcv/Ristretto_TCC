@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -59,18 +60,31 @@ public class SubTaskController {
             @ApiResponse(responseCode = "200", description = "Lista de subtarefas recuperada com sucesso",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = SubTaskDataListing.class))),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de paginação inválidos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Parâmetros inválidos\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<Page<SubTaskDataListing>> listing(
-            @PageableDefault(sort = {"dueDate"}, direction = Sort.Direction.ASC) Pageable pageable,
-            @RequestParam @NotNull(message = "taskId é obrigatório")
+            @RequestParam(defaultValue = "0")
+            @Parameter(description = "Número da página (>= 0)", example = "0")
+            int page,
+            @RequestParam(defaultValue = "20")
+            @Parameter(description = "Tamanho da página (> 0)", example = "20")
+            int size,
+            @RequestParam
             @Parameter(description = "ID da tarefa para filtrar subtarefas", required = true, example = "1")
             Long taskId
     ) {
-        var page = service.findByTaskId(pageable, taskId).map(SubTaskDataListing::new);
-        return ResponseEntity.ok(page);
+        if (page < 0 || size <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("dueDate").ascending());
+        var result = service.findByTaskId(pageable, taskId).map(SubTaskDataListing::new);
+        return ResponseEntity.ok(result);
     }
 
     @PutMapping
