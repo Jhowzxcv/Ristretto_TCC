@@ -16,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -43,12 +42,14 @@ public class TaskListController {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
-    public ResponseEntity<TaskListDataDetails> register(@RequestBody @Valid TaskListRegistrationData data,
-                                                        UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<TaskListDataDetails> register(
+            @RequestBody @Valid TaskListRegistrationData data,
+            UriComponentsBuilder uriBuilder
+    ) {
         var taskList = service.convertToEntity(data);
-        service.save(taskList);
-        var uri = uriBuilder.path("/tasklist/{id}").buildAndExpand(taskList.getId()).toUri();
-        return ResponseEntity.created(uri).body(new TaskListDataDetails(taskList));
+        var saved = service.save(taskList);
+        var uri = uriBuilder.path("/tasklist/{id}").buildAndExpand(saved.getId()).toUri();
+        return ResponseEntity.created(uri).body(new TaskListDataDetails(saved));
     }
 
     @GetMapping
@@ -79,7 +80,7 @@ public class TaskListController {
             return ResponseEntity.badRequest().build();
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("dueDate").ascending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("deadline").ascending());
         var result = service.findAllByUserId(pageable, userId).map(TaskListDataListing::new);
         return ResponseEntity.ok(result);
     }
@@ -88,7 +89,9 @@ public class TaskListController {
     @Transactional
     @Operation(summary = "Atualizar lista de tarefas", description = "Atualiza as informações de uma lista existente pelo ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista de tarefas atualizada com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Lista de tarefas atualizada com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TaskListDataDetails.class))),
             @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }"))),
@@ -97,14 +100,16 @@ public class TaskListController {
                             schema = @Schema(example = "{ \"error\": \"Lista não encontrada\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<TaskListDataDetails> update(@RequestBody @Valid TaskListUpdateData data) {
+    public ResponseEntity<TaskListDataDetails> update(
+            @RequestBody @Valid TaskListUpdateData data
+    ) {
         if (!service.existsById(data.id())) {
             throw new ResourceNotFoundException("Lista não encontrada");
         }
         var taskList = service.findByid(data.id());
         taskList.update(data);
-        service.save(taskList);
-        return ResponseEntity.ok(new TaskListDataDetails(taskList));
+        var saved = service.save(taskList);
+        return ResponseEntity.ok(new TaskListDataDetails(saved));
     }
 
     @DeleteMapping("/{id}")

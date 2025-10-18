@@ -16,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -43,10 +42,12 @@ public class TaskController {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
-    public ResponseEntity<TaskDataDetails> register(@RequestBody @Valid TaskRegistrationData data,
-                                                    UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<TaskDataDetails> register(
+            @RequestBody @Valid TaskRegistrationData data,
+            UriComponentsBuilder uriBuilder
+    ) {
         var task = service.convertToEntity(data);
-        var saved = service.save(task); // usa o retorno do save
+        var saved = service.save(task);
         var uri = uriBuilder.path("/task/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(uri).body(new TaskDataDetails(saved));
     }
@@ -78,7 +79,6 @@ public class TaskController {
         if (page < 0 || size <= 0) {
             return ResponseEntity.badRequest().build();
         }
-
         Pageable pageable = PageRequest.of(page, size, Sort.by("dueDate").ascending());
         var result = service.findAllByUserId(userId, pageable).map(TaskDataListing::new);
         return ResponseEntity.ok(result);
@@ -88,7 +88,9 @@ public class TaskController {
     @Transactional
     @Operation(summary = "Atualizar tarefa", description = "Atualiza as informações de uma tarefa existente pelo ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Tarefa atualizada com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Tarefa atualizada com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TaskDataDetails.class))),
             @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }"))),
@@ -97,7 +99,9 @@ public class TaskController {
                             schema = @Schema(example = "{ \"error\": \"Tarefa não encontrada\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<TaskDataDetails> update(@RequestBody @Valid TaskUpdateData data) {
+    public ResponseEntity<TaskDataDetails> update(
+            @RequestBody @Valid TaskUpdateData data
+    ) {
         if (!service.existsById(data.id())) {
             throw new ResourceNotFoundException("Tarefa não encontrada");
         }

@@ -16,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -43,8 +42,12 @@ public class GoalController {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
-    public ResponseEntity<?> register(@RequestBody @Valid GoalRegistrationData data,
-                                      UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<GoalDataDetails> register(
+            @RequestBody @Valid
+            @Parameter(description = "Dados para registrar a meta", required = true)
+            GoalRegistrationData data,
+            UriComponentsBuilder uriBuilder
+    ) {
         var goal = service.convertToEntity(data);
         service.save(goal);
 
@@ -92,7 +95,9 @@ public class GoalController {
     @Transactional
     @Operation(summary = "Atualizar meta", description = "Atualiza as informações de uma meta existente pelo ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Meta atualizada com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Meta atualizada com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = GoalDataDetails.class))),
             @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }"))),
@@ -101,7 +106,11 @@ public class GoalController {
                             schema = @Schema(example = "{ \"error\": \"Meta não encontrada\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<GoalDataDetails> update(@RequestBody @Valid GoalUpdateData data) {
+    public ResponseEntity<GoalDataDetails> update(
+            @RequestBody @Valid
+            @Parameter(description = "Dados para atualizar a meta", required = true)
+            GoalUpdateData data
+    ) {
         var goal = service.findById(data.id());
         goal.update(data);
         service.save(goal);

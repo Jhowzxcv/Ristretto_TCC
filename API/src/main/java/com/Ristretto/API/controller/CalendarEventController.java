@@ -16,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -43,8 +42,17 @@ public class CalendarEventController {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
-    public ResponseEntity<?> register(@RequestBody @Valid CalendarEventRegistrationData data,
-                                      UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<CalendarEventDataDetails> register(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados do evento a ser registrado",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = CalendarEventRegistrationData.class))
+            )
+            @Valid
+            @RequestBody
+            CalendarEventRegistrationData data,
+            UriComponentsBuilder uriBuilder) {
+
         var calendarEvent = service.convertToEntity(data);
         service.save(calendarEvent);
 
@@ -78,7 +86,8 @@ public class CalendarEventController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id"));
-        var result = service.findByUserId(pageable, userId).map(CalendarEventDataListing::new);
+        var result = service.findByUserId(pageable, userId)
+                .map(CalendarEventDataListing::new);
         return ResponseEntity.ok(result);
     }
 
@@ -95,13 +104,24 @@ public class CalendarEventController {
                             schema = @Schema(example = "{ \"error\": \"Evento não encontrado\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<CalendarEventDataDetails> update(@RequestBody @Valid CalendarEventUpdateData data) {
+    public ResponseEntity<CalendarEventDataDetails> update(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados para atualizar o evento",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = CalendarEventUpdateData.class))
+            )
+            @Valid
+            @RequestBody
+            CalendarEventUpdateData data) {
+
         if (!service.existsById(data.id())) {
             throw new ResourceNotFoundException("Evento não encontrado");
         }
+
         var calendarEvent = service.findByid(data.id());
         calendarEvent.update(data);
         service.save(calendarEvent);
+
         return ResponseEntity.ok(new CalendarEventDataDetails(calendarEvent));
     }
 

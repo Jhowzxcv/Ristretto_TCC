@@ -16,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -43,10 +42,20 @@ public class CategoryController {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
-    public ResponseEntity register(@RequestBody @Valid CategoryRegistrationData data,
-                                   UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<CategoryDataDetails> register(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados da categoria a ser criada",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = CategoryRegistrationData.class))
+            )
+            @Valid
+            @RequestBody
+            CategoryRegistrationData data,
+            UriComponentsBuilder uriBuilder) {
+
         var category = service.convertToEntity(data);
         service.save(category);
+
         var uri = uriBuilder.path("/category/{id}").buildAndExpand(category.getId()).toUri();
         return ResponseEntity.created(uri).body(new CategoryDataDetails(category));
     }
@@ -65,8 +74,12 @@ public class CategoryController {
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<Page<CategoryDataListing>> listing(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "0")
+            @Parameter(description = "Número da página (0-index)", example = "0")
+            int page,
+            @RequestParam(defaultValue = "20")
+            @Parameter(description = "Quantidade de itens por página", example = "20")
+            int size,
             @RequestParam
             @Parameter(description = "ID do usuário para filtrar categorias", required = true, example = "1")
             Long userId
@@ -93,10 +106,20 @@ public class CategoryController {
                             schema = @Schema(example = "{ \"error\": \"Categoria não encontrada\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<CategoryDataDetails> update(@RequestBody @Valid CategoryUpdateData data) {
+    public ResponseEntity<CategoryDataDetails> update(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados para atualizar a categoria",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = CategoryUpdateData.class))
+            )
+            @Valid
+            @RequestBody
+            CategoryUpdateData data) {
+
         var category = service.findByid(data.id());
         category.update(data);
         service.save(category);
+
         return ResponseEntity.ok(new CategoryDataDetails(category));
     }
 

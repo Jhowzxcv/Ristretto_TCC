@@ -12,9 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -41,8 +38,10 @@ public class UserController {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
-    public ResponseEntity<UserDataDetails> register(@RequestBody @Valid UserRegistrationData data,
-                                                    UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<UserDataDetails> register(
+            @RequestBody @Valid UserRegistrationData data,
+            UriComponentsBuilder uriBuilder
+    ) {
         var user = service.createUser(data);
         service.save(user);
         var uri = uriBuilder.path("/user/{id}").buildAndExpand(user.getId()).toUri();
@@ -53,7 +52,9 @@ public class UserController {
     @Transactional
     @Operation(summary = "Atualizar usuário", description = "Atualiza as informações de um usuário existente pelo ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserDataDetails.class))),
             @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(example = "{ \"error\": \"Dados inválidos\" }"))),
@@ -62,7 +63,9 @@ public class UserController {
                             schema = @Schema(example = "{ \"error\": \"Usuário não encontrado\" }"))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<UserDataDetails> update(@RequestBody @Valid UserUpdateData data) {
+    public ResponseEntity<UserDataDetails> update(
+            @RequestBody @Valid UserUpdateData data
+    ) {
         if (!service.existsById(data.id())) {
             throw new ResourceNotFoundException("Usuário não encontrado");
         }
