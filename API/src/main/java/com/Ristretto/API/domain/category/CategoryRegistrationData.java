@@ -11,14 +11,14 @@ public record CategoryRegistrationData(
         @Schema(description = "Nome da categoria", example = "Trabalho", required = true)
         String name,
 
-        @Schema(description = "Descrição da categoria", example = "Atividades profissionais")
+        @Schema(description = "Descrição da categoria", example = "Atividades profissionais", required = false)
         String description,
 
         @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "{color.invalid}")
-        @Schema(description = "Cor da categoria em hexadecimal", example = "#FF5733")
+        @Schema(description = "Cor da categoria em hexadecimal", example = "#FF5733", required = false)
         String color,
 
-        @Schema(description = "Ícone da categoria", example = "briefcase")
+        @Schema(description = "Ícone da categoria", example = "briefcase", required = false)
         String icon,
 
         @NotNull(message = "{user.required}")

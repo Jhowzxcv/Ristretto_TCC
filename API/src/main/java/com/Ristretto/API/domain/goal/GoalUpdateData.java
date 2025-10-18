@@ -12,12 +12,12 @@ public record GoalUpdateData(
         @Schema(description = "ID da meta (chave primária)", example = "1", required = true)
         Long id,
 
-        @Schema(description = "Título da meta", example = "Finalizar relatório")
+        @Schema(description = "Título da meta", example = "Finalizar relatório", required = false)
         String title,
 
-        @Schema(description = "Descrição detalhada da meta", example = "Finalizar o relatório financeiro até o fim do mês")
+        @Schema(description = "Descrição detalhada da meta", example = "Finalizar o relatório financeiro até o fim do mês", required = false)
         String description,
 
-        @Schema(description = "Nova data limite para conclusão da meta", example = "2025-10-31T18:00:00")
+        @Schema(description = "Nova data limite para conclusão da meta", example = "2025-10-31T18:00:00", required = false)
         LocalDateTime dueDate
 ) {}

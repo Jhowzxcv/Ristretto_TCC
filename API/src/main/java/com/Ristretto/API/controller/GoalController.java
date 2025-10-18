@@ -5,6 +5,7 @@ import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -43,8 +44,39 @@ public class GoalController {
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<GoalDataDetails> register(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados para registrar a meta",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GoalRegistrationData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Exemplo com campos mínimos necessários",
+                                            value = """
+                                            {
+                                              "title": "Finalizar relatório",
+                                              "userId": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Exemplo com todos os campos preenchidos",
+                                            value = """
+                                            {
+                                              "title": "Finalizar relatório",
+                                              "description": "Finalizar o relatório financeiro até o fim do mês",
+                                              "dueDate": "2025-10-31T18:00:00",
+                                              "userId": 1
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid
-            @Parameter(description = "Dados para registrar a meta", required = true)
             GoalRegistrationData data,
             UriComponentsBuilder uriBuilder
     ) {
@@ -107,8 +139,38 @@ public class GoalController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<GoalDataDetails> update(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados para atualizar a meta",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GoalUpdateData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Atualização mínima (apenas ID)",
+                                            value = """
+                                            {
+                                              "id": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Atualização com todos os campos",
+                                            value = """
+                                            {
+                                              "id": 1,
+                                              "title": "Finalizar relatório atualizado",
+                                              "description": "Nova descrição da meta",
+                                              "dueDate": "2025-11-30T18:00:00"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid
-            @Parameter(description = "Dados para atualizar a meta", required = true)
             GoalUpdateData data
     ) {
         var goal = service.findById(data.id());

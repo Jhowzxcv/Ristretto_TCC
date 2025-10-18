@@ -5,6 +5,7 @@ import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -46,7 +47,35 @@ public class CategoryController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Dados da categoria a ser criada",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = CategoryRegistrationData.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CategoryRegistrationData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Exemplo com campos mínimos necessários",
+                                            value = """
+                                            {
+                                              "name": "Trabalho",
+                                              "userId": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Exemplo com todos os campos preenchidos",
+                                            value = """
+                                            {
+                                              "name": "Trabalho",
+                                              "description": "Atividades profissionais",
+                                              "color": "#FF5733",
+                                              "icon": "briefcase",
+                                              "userId": 1
+                                            }
+                                            """
+                                    )
+                            }
+                    )
             )
             @Valid
             @RequestBody
@@ -110,7 +139,34 @@ public class CategoryController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Dados para atualizar a categoria",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = CategoryUpdateData.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CategoryUpdateData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Atualização mínima (apenas ID)",
+                                            value = """
+                                            {
+                                              "id": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Atualização com todos os campos",
+                                            value = """
+                                            {
+                                              "id": 1,
+                                              "name": "Trabalho Atualizado",
+                                              "description": "Nova descrição",
+                                              "color": "#33FF57",
+                                              "icon": "laptop"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
             )
             @Valid
             @RequestBody

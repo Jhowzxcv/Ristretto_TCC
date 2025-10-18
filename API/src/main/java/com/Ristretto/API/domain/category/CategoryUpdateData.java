@@ -11,15 +11,15 @@ public record CategoryUpdateData(
         @Schema(description = "ID da categoria (chave primária)", example = "1", required = true)
         Long id,
 
-        @Schema(description = "Nome da categoria", example = "Trabalho")
+        @Schema(description = "Nome da categoria", example = "Trabalho", required = false)
         String name,
 
-        @Schema(description = "Descrição da categoria", example = "Atividades profissionais")
+        @Schema(description = "Descrição da categoria", example = "Atividades profissionais", required = false)
         String description,
 
-        @Schema(description = "Cor da categoria em hexadecimal", example = "#FF5733")
+        @Schema(description = "Cor da categoria em hexadecimal", example = "#FF5733", required = false)
         String color,
 
-        @Schema(description = "Ícone da categoria", example = "briefcase")
+        @Schema(description = "Ícone da categoria", example = "briefcase", required = false)
         String icon
 ) {}

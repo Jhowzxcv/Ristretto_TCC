@@ -5,6 +5,7 @@ import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -46,7 +47,44 @@ public class CalendarEventController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Dados do evento a ser registrado",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = CalendarEventRegistrationData.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CalendarEventRegistrationData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Exemplo com campos mínimos necessários",
+                                            value = """
+                                            {
+                                              "title": "Reunião de trabalho",
+                                              "startDate": "2025-10-20T14:00:00",
+                                              "endDate": "2025-10-20T15:00:00",
+                                              "userId": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Exemplo com todos os campos preenchidos",
+                                            value = """
+                                            {
+                                              "title": "Reunião de trabalho",
+                                              "description": "Discutir metas do mês",
+                                              "startDate": "2025-10-20T14:00:00",
+                                              "endDate": "2025-10-20T15:00:00",
+                                              "timezone": "America/Sao_Paulo",
+                                              "color": "#1A2B3C",
+                                              "userId": 1,
+                                              "taskId": 2,
+                                              "repetitive": true,
+                                              "repetitionType": "DAILY",
+                                              "repetitionRule": "FREQ=WEEKLY;BYDAY=MO",
+                                              "tactileReminder": false
+                                            }
+                                            """
+                                    )
+                            }
+                    )
             )
             @Valid
             @RequestBody
@@ -108,7 +146,40 @@ public class CalendarEventController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Dados para atualizar o evento",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = CalendarEventUpdateData.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CalendarEventUpdateData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Atualização mínima (apenas ID)",
+                                            value = """
+                                            {
+                                              "id": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Atualização com todos os campos",
+                                            value = """
+                                            {
+                                              "id": 1,
+                                              "title": "Reunião de trabalho atualizada",
+                                              "description": "Discutir novas metas",
+                                              "startDate": "2025-10-21T14:00:00",
+                                              "endDate": "2025-10-21T15:00:00",
+                                              "timezone": "America/Sao_Paulo",
+                                              "color": "#FF5733",
+                                              "repetitive": false,
+                                              "repetitionType": "WEEKLY",
+                                              "repeitionRule": "FREQ=DAILY",
+                                              "tactileReminder": true
+                                            }
+                                            """
+                                    )
+                            }
+                    )
             )
             @Valid
             @RequestBody

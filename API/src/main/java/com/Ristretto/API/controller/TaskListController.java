@@ -5,6 +5,7 @@ import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -43,6 +44,45 @@ public class TaskListController {
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<TaskListDataDetails> register(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados da lista de tarefas a ser criada",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TaskListRegistrationData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Exemplo com campos mínimos necessários",
+                                            value = """
+                                            {
+                                              "title": "Lista Semanal",
+                                              "type": "STANDARD",
+                                              "userId": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Exemplo com todos os campos preenchidos",
+                                            value = """
+                                            {
+                                              "title": "Lista Semanal",
+                                              "color": "#FF5733",
+                                              "icon": "📌",
+                                              "type": "STANDARD",
+                                              "repetitionIntervalAmount": 7,
+                                              "repetitionIntervalType": "DAY",
+                                              "repeatWhenComplete": true,
+                                              "manualRestartAllowed": false,
+                                              "deadline": "2025-12-31T23:59:00",
+                                              "userId": 1
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid TaskListRegistrationData data,
             UriComponentsBuilder uriBuilder
     ) {
@@ -101,6 +141,43 @@ public class TaskListController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<TaskListDataDetails> update(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados para atualizar a lista de tarefas",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TaskListUpdateData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Atualização mínima (apenas ID)",
+                                            value = """
+                                            {
+                                              "id": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Atualização com todos os campos",
+                                            value = """
+                                            {
+                                              "id": 1,
+                                              "title": "Lista Atualizada",
+                                              "color": "#33FF57",
+                                              "icon": "📝",
+                                              "type": "CYCLIC",
+                                              "repetitionIntervalAmount": 7,
+                                              "repetitionIntervalType": "DAY",
+                                              "repeatWhenComplete": true,
+                                              "manualRestartAllowed": false,
+                                              "deadline": "2025-12-31T23:59:00"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid TaskListUpdateData data
     ) {
         if (!service.existsById(data.id())) {

@@ -12,15 +12,15 @@ public record SubTaskUpdateData(
         @Schema(description = "ID da subtarefa a ser atualizada", example = "1", required = true)
         Long id,
 
-        @Schema(description = "Título atualizado da subtarefa", example = "Finalizar relatório revisado")
+        @Schema(description = "Título atualizado da subtarefa", example = "Finalizar relatório revisado", required = false)
         String title,
 
-        @Schema(description = "Indica se a subtarefa foi concluída", example = "true")
+        @Schema(description = "Indica se a subtarefa foi concluída", example = "true", required = false)
         Boolean isDone,
 
-        @Schema(description = "Descrição atualizada da subtarefa", example = "Revisar métricas do trimestre")
+        @Schema(description = "Descrição atualizada da subtarefa", example = "Revisar métricas do trimestre", required = false)
         String description,
 
-        @Schema(description = "Nova data de vencimento da subtarefa", example = "2025-12-31T23:59:00")
+        @Schema(description = "Nova data de vencimento da subtarefa", example = "2025-12-31T23:59:00", required = false)
         LocalDateTime dueDate
 ) {}

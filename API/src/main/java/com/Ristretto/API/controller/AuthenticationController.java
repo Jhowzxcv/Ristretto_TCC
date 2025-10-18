@@ -6,6 +6,7 @@ import com.Ristretto.API.infra.security.JWTTokenData;
 import com.Ristretto.API.infra.security.TokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -48,7 +49,22 @@ public class AuthenticationController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Dados de autenticação do usuário",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = AuthenticationData.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AuthenticationData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Login completo",
+                                            summary = "Exemplo de autenticação",
+                                            value = """
+                                            {
+                                              "email": "jhonathan@example.com",
+                                              "password": "123456"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
             )
             @Valid @RequestBody AuthenticationData data) {
 

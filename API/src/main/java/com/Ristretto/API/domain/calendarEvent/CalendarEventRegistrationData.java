@@ -17,7 +17,7 @@ public record CalendarEventRegistrationData(
         @Schema(description = "Título do evento", example = "Reunião de trabalho", required = true)
         String title,
 
-        @Schema(description = "Descrição opcional do evento", example = "Discutir metas do mês")
+        @Schema(description = "Descrição opcional do evento", example = "Discutir metas do mês", required = false)
         String description,
 
         @NotNull(message = "{startDate.required}")
@@ -31,30 +31,30 @@ public record CalendarEventRegistrationData(
         LocalDateTime endDate,
 
         @ValidTimezone
-        @Schema(description = "Fuso horário do evento", example = "America/Sao_Paulo")
+        @Schema(description = "Fuso horário do evento", example = "America/Sao_Paulo", required = false)
         String timezone,
 
         @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Cor deve estar no formato hexadecimal ex: #1A2B3C")
-        @Schema(description = "Cor do evento em hexadecimal", example = "#1A2B3C")
+        @Schema(description = "Cor do evento em hexadecimal", example = "#1A2B3C", required = false)
         String color,
 
         @NotNull(message = "{user.required}")
         @Schema(description = "ID do usuário dono do evento", example = "1", required = true)
         Long userId,
 
-        @Schema(description = "ID da tarefa associada ao evento", example = "2")
+        @Schema(description = "ID da tarefa associada ao evento", example = "2", required = false)
         Long taskId,
 
-        @Schema(description = "Se o evento se repete", example = "true")
+        @Schema(description = "Se o evento se repete", example = "true", required = false)
         Boolean repetitive,
 
-        @Schema(description = "Tipo de repetição do evento")
+        @Schema(description = "Tipo de repetição do evento", required = false)
         RepetitionType repetitionType,
 
         @ValidRRule
-        @Schema(description = "Regra de repetição do evento", example = "FREQ=WEEKLY;BYDAY=MO")
+        @Schema(description = "Regra de repetição do evento", example = "FREQ=WEEKLY;BYDAY=MO", required = false)
         String repetitionRule,
 
-        @Schema(description = "Se o evento possui lembrete tátil", example = "false")
+        @Schema(description = "Se o evento possui lembrete tátil", example = "false", required = false)
         Boolean tactileReminder
 ) {}

@@ -5,6 +5,7 @@ import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -39,6 +40,41 @@ public class UserController {
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<UserDataDetails> register(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados do usuário a ser registrado",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserRegistrationData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Exemplo com campos mínimos necessários",
+                                            value = """
+                                            {
+                                              "name": "Jhonathan Dourado",
+                                              "email": "jhonathan@example.com",
+                                              "password": "123456"
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Exemplo com todos os campos preenchidos",
+                                            value = """
+                                            {
+                                              "name": "Jhonathan Dourado",
+                                              "email": "jhonathan@example.com",
+                                              "password": "123456",
+                                              "theme": "DARK",
+                                              "defaultReminderMin": 10,
+                                              "avatarUrl": "https://example.com/avatar.jpg"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid UserRegistrationData data,
             UriComponentsBuilder uriBuilder
     ) {
@@ -64,6 +100,38 @@ public class UserController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<UserDataDetails> update(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados para atualizar o usuário",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserUpdateData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Atualização mínima (apenas ID)",
+                                            value = """
+                                            {
+                                              "id": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Atualização com todos os campos",
+                                            value = """
+                                            {
+                                              "id": 1,
+                                              "name": "Jhonathan Dourado Atualizado",
+                                              "theme": "LIGHT",
+                                              "defaultReminderMin": 15,
+                                              "avatarUrl": "https://example.com/new-avatar.jpg"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid UserUpdateData data
     ) {
         if (!service.existsById(data.id())) {

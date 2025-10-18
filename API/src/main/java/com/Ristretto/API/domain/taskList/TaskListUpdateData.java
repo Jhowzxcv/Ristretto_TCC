@@ -10,33 +10,33 @@ import java.time.LocalDateTime;
 public record TaskListUpdateData(
         @NotNull(message = "{id.required}")
         @Positive
-        @Schema(description = "ID da lista a ser atualizada", example = "1")
+        @Schema(description = "ID da lista a ser atualizada", example = "1", required = true)
         Long id,
 
-        @Schema(description = "Título da lista", example = "Lista Atualizada")
+        @Schema(description = "Título da lista", example = "Lista Atualizada", required = false)
         String title,
 
-        @Schema(description = "Cor representativa da lista", example = "#33FF57")
+        @Schema(description = "Cor representativa da lista", example = "#33FF57", required = false)
         String color,
 
-        @Schema(description = "Ícone da lista", example = "📝")
+        @Schema(description = "Ícone da lista", example = "📝", required = false)
         String icon,
 
-        @Schema(description = "Tipo da lista", example = "CYCLIC")
+        @Schema(description = "Tipo da lista", example = "CYCLIC", required = false)
         ListType type,
 
-        @Schema(description = "Quantidade de intervalo para listas cíclicas", example = "7")
+        @Schema(description = "Quantidade de intervalo para listas cíclicas", example = "7", required = false)
         Integer repetitionIntervalAmount,
 
-        @Schema(description = "Tipo de intervalo para listas cíclicas", example = "DAY")
+        @Schema(description = "Tipo de intervalo para listas cíclicas", example = "DAY", required = false)
         IntervalType repetitionIntervalType,
 
-        @Schema(description = "Repetir automaticamente quando concluída", example = "true")
+        @Schema(description = "Repetir automaticamente quando concluída", example = "true", required = false)
         Boolean repeatWhenComplete,
 
-        @Schema(description = "Permite reinício manual da lista", example = "false")
+        @Schema(description = "Permite reinício manual da lista", example = "false", required = false)
         Boolean manualRestartAllowed,
 
-        @Schema(description = "Prazo da lista", example = "2025-12-31T23:59:00")
+        @Schema(description = "Prazo da lista", example = "2025-12-31T23:59:00", required = false)
         LocalDateTime deadline
 ) {}

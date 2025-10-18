@@ -5,6 +5,7 @@ import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -43,6 +44,38 @@ public class SubTaskController {
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<SubTaskDataDetails> register(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados da subtarefa a ser criada",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SubTaskRegistrationData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Exemplo com campos mínimos necessários",
+                                            value = """
+                                            {
+                                              "title": "Finalizar relatório",
+                                              "taskId": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Exemplo com todos os campos preenchidos",
+                                            value = """
+                                            {
+                                              "title": "Finalizar relatório",
+                                              "description": "Incluir todas as métricas do trimestre",
+                                              "dueDate": "2025-12-31T23:59:00",
+                                              "taskId": 1
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid SubTaskRegistrationData data,
             UriComponentsBuilder uriBuilder
     ) {
@@ -99,6 +132,38 @@ public class SubTaskController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<SubTaskDataDetails> update(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados para atualizar a subtarefa",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SubTaskUpdateData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Atualização mínima (apenas ID)",
+                                            value = """
+                                            {
+                                              "id": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Atualização com todos os campos",
+                                            value = """
+                                            {
+                                              "id": 1,
+                                              "title": "Finalizar relatório revisado",
+                                              "isDone": true,
+                                              "description": "Revisar métricas do trimestre",
+                                              "dueDate": "2025-12-31T23:59:00"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid SubTaskUpdateData data
     ) {
         var subTask = service.findById(data.id());

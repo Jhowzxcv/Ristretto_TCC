@@ -8,14 +8,14 @@ import jakarta.validation.constraints.Positive;
 public record UserUpdateData(
         @NotNull(message = "{id.required}")
         @Positive
-        @Schema(description = "ID do usuário a ser atualizado", example = "1")
+        @Schema(description = "ID do usuário a ser atualizado", example = "1", required = true)
         Long id,
-        @Schema(description = "Nome do usuário", example = "Jhonathan Dourado")
+        @Schema(description = "Nome do usuário", example = "Jhonathan Dourado", required = false)
         String name,
-        @Schema(description = "Tema preferido do usuário", example = "DARK")
+        @Schema(description = "Tema preferido do usuário", example = "DARK", required = false)
         Theme theme,
-        @Schema(description = "Tempo padrão de lembrete em minutos", example = "10")
+        @Schema(description = "Tempo padrão de lembrete em minutos", example = "10", required = false)
         Integer defaultReminderMin,
-        @Schema(description = "URL do avatar do usuário")
+        @Schema(description = "URL do avatar do usuário", required = false)
         String avatarUrl
 ) {}

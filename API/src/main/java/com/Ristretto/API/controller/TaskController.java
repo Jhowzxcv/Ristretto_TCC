@@ -5,6 +5,7 @@ import com.Ristretto.API.infra.exception.Domain.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -43,6 +44,47 @@ public class TaskController {
                             schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
     })
     public ResponseEntity<TaskDataDetails> register(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados da tarefa a ser criada",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TaskRegistrationData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Exemplo com campos mínimos necessários",
+                                            value = """
+                                            {
+                                              "title": "Estudar Java",
+                                              "priority": "HIGH",
+                                              "status": "PENDING",
+                                              "userId": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Exemplo com todos os campos preenchidos",
+                                            value = """
+                                            {
+                                              "title": "Estudar Java",
+                                              "description": "Revisar módulos de OOP",
+                                              "dueDate": "2025-10-20T15:00:00",
+                                              "priority": "HIGH",
+                                              "status": "PENDING",
+                                              "userId": 1,
+                                              "categoryId": 2,
+                                              "goalId": 3,
+                                              "taskListId": 4,
+                                              "focusMode": false,
+                                              "isDone": false
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid TaskRegistrationData data,
             UriComponentsBuilder uriBuilder
     ) {
@@ -100,6 +142,43 @@ public class TaskController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<TaskDataDetails> update(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados para atualizar a tarefa",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TaskUpdateData.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Apenas obrigatórios",
+                                            summary = "Atualização mínima (apenas ID)",
+                                            value = """
+                                            {
+                                              "id": 1
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Completo",
+                                            summary = "Atualização com todos os campos",
+                                            value = """
+                                            {
+                                              "id": 1,
+                                              "title": "Estudar Java Avançado",
+                                              "description": "Revisar Spring Boot",
+                                              "dueDate": "2025-10-25T15:00:00",
+                                              "priority": "MEDIUM",
+                                              "status": "IN_PROGRESS",
+                                              "categoryId": 3,
+                                              "goalId": 4,
+                                              "taskListId": 5,
+                                              "focusMode": true
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
             @RequestBody @Valid TaskUpdateData data
     ) {
         if (!service.existsById(data.id())) {

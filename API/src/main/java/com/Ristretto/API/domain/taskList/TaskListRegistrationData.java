@@ -13,36 +13,36 @@ import java.time.LocalDateTime;
 @Schema(description = "Dados para registro de nova lista de tarefas")
 public record TaskListRegistrationData(
         @NotBlank(message = "{title.required}")
-        @Schema(description = "Título da lista", example = "Lista Semanal")
+        @Schema(description = "Título da lista", example = "Lista Semanal", required = true)
         String title,
 
-        @Schema(description = "Cor representativa da lista", example = "#FF5733")
+        @Schema(description = "Cor representativa da lista", example = "#FF5733", required = false)
         String color,
 
-        @Schema(description = "Ícone da lista", example = "📌")
+        @Schema(description = "Ícone da lista", example = "📌", required = false)
         String icon,
 
         @NotNull(message = "{type.required}")
-        @Schema(description = "Tipo da lista", example = "STANDARD")
+        @Schema(description = "Tipo da lista", example = "STANDARD", required = true)
         ListType type,
 
-        @Schema(description = "Quantidade de intervalo para listas cíclicas", example = "7")
+        @Schema(description = "Quantidade de intervalo para listas cíclicas", example = "7", required = false)
         Integer repetitionIntervalAmount,
 
-        @Schema(description = "Tipo de intervalo para listas cíclicas", example = "DAY")
+        @Schema(description = "Tipo de intervalo para listas cíclicas", example = "DAY", required = false)
         IntervalType repetitionIntervalType,
 
-        @Schema(description = "Repetir automaticamente quando concluída", example = "true")
+        @Schema(description = "Repetir automaticamente quando concluída", example = "true", required = false)
         Boolean repeatWhenComplete,
 
-        @Schema(description = "Permite reinício manual da lista", example = "false")
+        @Schema(description = "Permite reinício manual da lista", example = "false", required = false)
         Boolean manualRestartAllowed,
 
-        @Schema(description = "Prazo da lista", example = "2025-12-31T23:59:00")
+        @Schema(description = "Prazo da lista", example = "2025-12-31T23:59:00", required = false)
         LocalDateTime deadline,
 
         @NotNull(message = "{user.required}")
-        @Schema(description = "ID do usuário dono da lista", example = "1")
+        @Schema(description = "ID do usuário dono da lista", example = "1", required = true)
         Long userId
 ) {
         @AssertTrue(message = "Repetition type and amount are required for cyclic lists")
@@ -63,4 +63,3 @@ public record TaskListRegistrationData(
                 return true;
         }
 }
-

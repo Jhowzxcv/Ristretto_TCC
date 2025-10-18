@@ -15,11 +15,11 @@ public record TaskRegistrationData(
         @Schema(description = "Título da tarefa", example = "Estudar Java", required = true)
         String title,
 
-        @Schema(description = "Descrição detalhada da tarefa", example = "Revisar módulos de OOP")
+        @Schema(description = "Descrição detalhada da tarefa", example = "Revisar módulos de OOP", required = false)
         String description,
 
         @Future(message = "{dueDate.future}")
-        @Schema(description = "Data de vencimento da tarefa", example = "2025-10-20T15:00:00")
+        @Schema(description = "Data de vencimento da tarefa", example = "2025-10-20T15:00:00", required = false)
         LocalDateTime dueDate,
 
         @NotNull(message = "{priority.required}")
@@ -34,19 +34,19 @@ public record TaskRegistrationData(
         @Schema(description = "ID do usuário dono da tarefa", example = "1", required = true)
         Long userId,
 
-        @Schema(description = "ID da categoria associada à tarefa", example = "2")
+        @Schema(description = "ID da categoria associada à tarefa", example = "2", required = false)
         Long categoryId,
 
-        @Schema(description = "ID da meta associada à tarefa", example = "3")
+        @Schema(description = "ID da meta associada à tarefa", example = "3", required = false)
         Long goalId,
 
-        @Schema(description = "ID da lista de tarefas associada", example = "4")
+        @Schema(description = "ID da lista de tarefas associada", example = "4", required = false)
         Long taskListId,
 
-        @Schema(description = "Indica se a tarefa está em modo foco", example = "false")
+        @Schema(description = "Indica se a tarefa está em modo foco", example = "false", required = false)
         Boolean focusMode,
 
-        @Schema(description = "Indica se a tarefa já foi concluída", example = "false")
+        @Schema(description = "Indica se a tarefa já foi concluída", example = "false", required = false)
         Boolean isDone
 ) implements TaskDataCommon {
 }

@@ -12,11 +12,11 @@ public record SubTaskRegistrationData(
         @Schema(description = "Título da subtarefa", example = "Finalizar relatório", required = true)
         String title,
 
-        @Schema(description = "Descrição detalhada da subtarefa", example = "Incluir todas as métricas do trimestre")
+        @Schema(description = "Descrição detalhada da subtarefa", example = "Incluir todas as métricas do trimestre", required = false)
         String description,
 
         @Future(message = "{dueDate.future}")
-        @Schema(description = "Data de vencimento da subtarefa", example = "2025-12-31T23:59:00", required = true)
+        @Schema(description = "Data de vencimento da subtarefa", example = "2025-12-31T23:59:00", required = false)
         LocalDateTime dueDate,
 
         @NotNull(message = "{task.required}")
