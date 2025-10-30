@@ -29,7 +29,7 @@ public class TokenService {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.create()
                     .withIssuer(ISSUER)
-                    .withSubject(String.valueOf(user.getId())) // ID como sub
+                    .withSubject(user.getEmail()) // ✅ agora grava o e‑mail como subject
                     .withIssuedAt(Instant.now())
                     .withExpiresAt(expirationDate())
                     .sign(algorithm);
@@ -38,7 +38,6 @@ public class TokenService {
         }
     }
 
-
     public String getSubject(String tokenJWT) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
@@ -46,7 +45,7 @@ public class TokenService {
                     .withIssuer(ISSUER)
                     .build()
                     .verify(tokenJWT)
-                    .getSubject();
+                    .getSubject(); // ✅ retorna o e‑mail
         } catch (JWTVerificationException exception) {
             throw new InvalidTokenException("Invalid or expired JWT token", exception);
         }

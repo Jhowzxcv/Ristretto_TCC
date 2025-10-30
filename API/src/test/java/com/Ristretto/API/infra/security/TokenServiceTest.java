@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class TokenServiceTest {
 
     private TokenService tokenService;
-    private User mockUser;
+    private User user;
 
     @BeforeEach
     void setUp() {
@@ -23,27 +23,28 @@ class TokenServiceTest {
         ReflectionTestUtils.setField(tokenService, "secret", "my-secret-key");
         ReflectionTestUtils.setField(tokenService, "expirationHours", 1L);
 
-        mockUser = new User();
-        mockUser.setEmail("user@example.com");
+        user = new User();
+        user.setId(1L); // ✅ agora o ID está definido
+        user.setEmail("user@example.com");
     }
 
     @Test
     @DisplayName("Deve gerar token JWT válido para usuário")
     void generateToken_ShouldReturnValidToken() {
-        String token = tokenService.generateToken(mockUser);
+        String token = tokenService.generateToken(user);
 
         assertNotNull(token);
         assertFalse(token.isBlank());
     }
 
     @Test
-    @DisplayName("Deve extrair subject corretamente de token válido")
-    void getSubject_ShouldReturnEmail_WhenTokenIsValid() {
-        String token = tokenService.generateToken(mockUser);
+    @DisplayName("Deve extrair subject corretamente de token válido (ID do usuário)")
+    void getSubject_ShouldReturnId_WhenTokenIsValid() {
+        String token = tokenService.generateToken(user);
 
         String subject = tokenService.getSubject(token);
 
-        assertEquals("user@example.com", subject);
+        assertEquals("1", subject); // ✅ subject é o ID
     }
 
     @Test
@@ -63,7 +64,7 @@ class TokenServiceTest {
         ReflectionTestUtils.setField(brokenService, "expirationHours", 1L);
 
         assertThrows(TokenGenerationException.class,
-                () -> brokenService.generateToken(mockUser));
+                () -> brokenService.generateToken(user));
     }
 
     @Test
@@ -73,7 +74,7 @@ class TokenServiceTest {
         ReflectionTestUtils.setField(shortLivedService, "secret", "my-secret-key");
         ReflectionTestUtils.setField(shortLivedService, "expirationHours", -1L); // já expirado
 
-        String expiredToken = shortLivedService.generateToken(mockUser);
+        String expiredToken = shortLivedService.generateToken(user);
 
         assertThrows(InvalidTokenException.class,
                 () -> shortLivedService.getSubject(expiredToken));

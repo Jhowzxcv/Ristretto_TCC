@@ -30,21 +30,21 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         if (tokenJWT != null) {
             try {
-                var subject = tokenService.getSubject(tokenJWT);
+                var subject = tokenService.getSubject(tokenJWT); // ✅ agora é o e‑mail
                 var usuario = repository.findByEmail(subject);
 
                 if (usuario != null) {
-                    var authentication = new UsernamePasswordAuthenticationToken(usuario, null, null);
+                    var authentication = new UsernamePasswordAuthenticationToken(
+                            usuario, null, usuario.getAuthorities() // melhor passar authorities
+                    );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
                     SecurityContextHolder.clearContext();
                 }
             } catch (Exception e) {
-                // Token inválido → limpa contexto
                 SecurityContextHolder.clearContext();
             }
         } else {
-            // Sem token → não autentica, apenas limpa contexto
             SecurityContextHolder.clearContext();
         }
 
@@ -53,11 +53,9 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     private String recuperarToken(HttpServletRequest request) {
         var authorizationHeader = request.getHeader("Authorization");
-        if (authorizationHeader != null) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.replace("Bearer ", "");
         }
-
         return null;
     }
-
 }

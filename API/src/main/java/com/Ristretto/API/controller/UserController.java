@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -82,6 +83,39 @@ public class UserController {
         service.save(user);
         var uri = uriBuilder.path("/user/{id}").buildAndExpand(user.getId()).toUri();
         return ResponseEntity.created(uri).body(new UserDataDetails(user));
+    }
+
+    @GetMapping("/profile")
+    @Operation(summary = "Buscar usuário autenticado", description = "Retorna as informações do usuário autenticado baseado no token JWT")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Usuário encontrado com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserDataDetails.class))),
+            @ApiResponse(responseCode = "401", description = "Token inválido ou não fornecido",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Token inválido ou não fornecido\" }"))),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Usuário não encontrado\" }"))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(example = "{ \"error\": \"Erro interno do servidor\" }")))
+    })
+    public ResponseEntity<UserDataDetails> getCurrentUser(
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResourceNotFoundException("Usuário não autenticado");
+        }
+
+        String email = authentication.getName();
+        var user = service.findByEmail(email);
+
+        if (user == null) {
+            throw new ResourceNotFoundException("Usuário não encontrado");
+        }
+
+        return ResponseEntity.ok(new UserDataDetails(user));
     }
 
     @PutMapping
