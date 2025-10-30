@@ -37,7 +37,7 @@ public record CalendarEventUpdateData(
         RepetitionType repetitionType,
 
         @Schema(description = "Regra de repetição do evento", example = "FREQ=WEEKLY;BYDAY=MO", required = false)
-        String repeitionRule,
+        String repetitionRule,
 
         @Schema(description = "Se o evento possui lembrete tátil", example = "false", required = false)
         Boolean tactileReminder

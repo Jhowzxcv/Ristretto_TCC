@@ -1,4 +1,4 @@
-package com.Ristretto.API.infra.Security;
+package com.Ristretto.API.infra.security;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

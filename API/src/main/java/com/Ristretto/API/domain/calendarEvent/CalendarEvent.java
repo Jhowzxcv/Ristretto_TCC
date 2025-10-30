@@ -94,8 +94,8 @@ public class CalendarEvent {
         if (data.repetitionType() != null) {
             this.repetitionType = data.repetitionType();
         }
-        if (data.repeitionRule() != null) {
-            this.repetitionRule = data.repeitionRule();
+        if (data.repetitionRule() != null) {
+            this.repetitionRule = data.repetitionRule();
         }
         if (data.tactileReminder() != null) {
             this.tactileReminder = data.tactileReminder();

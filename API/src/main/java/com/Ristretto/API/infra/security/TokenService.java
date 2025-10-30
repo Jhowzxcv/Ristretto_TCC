@@ -29,7 +29,7 @@ public class TokenService {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.create()
                     .withIssuer(ISSUER)
-                    .withSubject(user.getEmail())
+                    .withSubject(String.valueOf(user.getId())) // ID como sub
                     .withIssuedAt(Instant.now())
                     .withExpiresAt(expirationDate())
                     .sign(algorithm);
@@ -37,6 +37,7 @@ public class TokenService {
             throw new TokenGenerationException("Failed to generate JWT token", exception);
         }
     }
+
 
     public String getSubject(String tokenJWT) {
         try {
